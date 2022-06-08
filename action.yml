@@ -9,14 +9,18 @@ branding:
  color: purple
 inputs:
   version:
-    description: String. Specify a new version, "patch", "minor", or "major".
+    description: A new version, "patch", "minor", or "major".
     required: false
     default: minor
   latest:
-    description: Boolean. If true, generates CHANGELOG_latest.md also.
+    description: If true, generates CHANGELOG_latest.md also.
     required: false
+  filePath:
+    description: CHANGELOG.md file path
+    required: false
+    default: CHANGELOG.md
   tag:
-    description: Boolean. If true, creates a new git tag to the current commit.
+    description: If true, creates a new git tag to the current commit.
     required: false
 outputs:
   version:
