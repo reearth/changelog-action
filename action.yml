@@ -1,0 +1,23 @@
+name: CHANGELOG generator
+description: Generate CHANGELOG automatically
+author: rot1024
+runs:
+  using: node16
+  main: main.mjs
+branding:
+ icon: file-text
+ color: purple
+inputs:
+  version:
+    description: String. Specify a new version, "patch", "minor", or "major".
+    required: false
+    default: minor
+  latest:
+    description: Boolean. If true, generates CHANGELOG_latest.md also.
+    required: false
+  tag:
+    description: Boolean. If true, creates a new git tag to the current commit.
+    required: false
+outputs:
+  version:
+    description: The new version
