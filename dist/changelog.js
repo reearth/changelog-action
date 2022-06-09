@@ -6,7 +6,9 @@ function generateChangelog(version, date, commits, options) {
     const commitGroups = (0, lodash_1.groupBy)(commits, (c) => c.group ?? "");
     const groups = Object.keys(commitGroups);
     const knownGroups = Object.keys(options?.group ?? []);
-    const unknownGroups = groups.filter((g) => g && !knownGroups.includes(g));
+    const unknownGroups = groups
+        .filter((g) => g && !knownGroups.includes(g))
+        .sort();
     const groupEnabled = groups.length > 1 || !!groups[0] || !!knownGroups.length;
     return [
         `## ${version} - ${formatDate(date)}`,
@@ -33,7 +35,9 @@ function generateChangelogGroup(commits, groupTitle, prefix, url, level = 3) {
         return "";
     const commitPrefixes = (0, lodash_1.groupBy)(commits, (c) => c.prefix ?? "");
     const knownPrefixes = Object.keys(prefix);
-    const unknownPrefixes = Object.keys(commitPrefixes).filter((p) => p && !knownPrefixes.includes(p));
+    const unknownPrefixes = Object.keys(commitPrefixes)
+        .filter((p) => p && !knownPrefixes.includes(p))
+        .sort();
     return [
         ...(groupTitle === false ? [] : [`${"#".repeat(level)} ${groupTitle}`, ""]),
         ...[...Object.entries(prefix), ...unknownPrefixes.map((p) => [p, p])]

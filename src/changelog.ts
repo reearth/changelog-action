@@ -24,7 +24,9 @@ export function generateChangelog(
   const commitGroups = groupBy(commits, (c) => c.group ?? "");
   const groups = Object.keys(commitGroups);
   const knownGroups = Object.keys(options?.group ?? []);
-  const unknownGroups = groups.filter((g) => g && !knownGroups.includes(g));
+  const unknownGroups = groups
+    .filter((g) => g && !knownGroups.includes(g))
+    .sort();
   const groupEnabled = groups.length > 1 || !!groups[0] || !!knownGroups.length;
 
   return [
@@ -63,9 +65,9 @@ export function generateChangelogGroup(
   if (!commits.length) return "";
   const commitPrefixes = groupBy(commits, (c) => c.prefix ?? "");
   const knownPrefixes = Object.keys(prefix);
-  const unknownPrefixes = Object.keys(commitPrefixes).filter(
-    (p) => p && !knownPrefixes.includes(p)
-  );
+  const unknownPrefixes = Object.keys(commitPrefixes)
+    .filter((p) => p && !knownPrefixes.includes(p))
+    .sort();
 
   return [
     ...(groupTitle === false ? [] : [`${"#".repeat(level)} ${groupTitle}`, ""]),
