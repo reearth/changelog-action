@@ -15,7 +15,7 @@ export async function exec(
     ? bumpVersion(latest, version)
     : isValidVersion(version)
     ? version
-    : undefined;
+    : (latest ? "v0.1.0" : undefined);
   if (!nextVersion) {
     throw new Error(`invalid version: ${version}`);
   }
