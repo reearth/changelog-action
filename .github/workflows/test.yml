@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: changelog
-        uses: reearth/changelog-action@main
+        uses: reearth/changelog-action@${{ github.sha }}
       - name: Print version
         run: echo $PREV_VERSION -> $VERSION
         env:
