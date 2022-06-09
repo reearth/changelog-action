@@ -18,8 +18,8 @@ inputs:
   date:
     description: 'Release date. Default: current local time'
     required: false
-  url:
-    description: Repository URL used in CHANGELOG as the link destination for commits and pull requests.
+  repo:
+    description: Repository name (owner/name) or URL used in CHANGELOG as the link destination for commits and pull requests.
     required: false
   latest:
     description: If true, generates CHANGELOG_latest.md also. You can also specify a file name.
