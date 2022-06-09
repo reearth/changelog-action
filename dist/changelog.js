@@ -70,7 +70,7 @@ exports.generateChangelogCommit = generateChangelogCommit;
 function insertChangelog(changelog, inserting) {
     const i = changelog.search(/^## v?[0-9]/im);
     if (i < 0)
-        throw new Error("invalid changelog");
+        return changelog + "\n" + inserting;
     return changelog.slice(0, i) + inserting.trim() + "\n\n" + changelog.slice(i);
 }
 exports.insertChangelog = insertChangelog;
