@@ -8,7 +8,7 @@ const defaultChangelog = "# Changelog\n\nAll notable changes to this project wil
 const version = (0, core_1.getInput)("version") || process.env.CHANGELOG_VERSION || "minor";
 const versionAsIs = (0, core_1.getInput)("versionAsIs") || process.env.CHANGELOG_VERSION_ASIS;
 const date = dateOrNow((0, core_1.getInput)("date") || process.env.CHANGELOG_DATE);
-const url = dateOrNow((0, core_1.getInput)("url") || process.env.CHANGELOG_URL);
+const url = (0, core_1.getInput)("url") || process.env.CHANGELOG_URL;
 const latest = (0, core_1.getInput)("latest") || process.env.CHANGELOG_LATEST;
 const output = (0, core_1.getInput)("output") || process.env.CHANGELOG_OUTPUT || "CHANGELOG.md";
 (async function () {
