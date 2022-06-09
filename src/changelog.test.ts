@@ -41,19 +41,19 @@ test("generateChangelog", () => {
     "",
     "#### chore",
     "",
-    "- a `[xxxxxx](https://github.com/foo/bar/commit/xxxxxx)`",
+    "- A `[xxxxxx](https://github.com/foo/bar/commit/xxxxxx)`",
     "",
     "### web",
     "",
     "#### Feature",
     "",
-    "- hoge",
+    "- Hoge",
     "",
     "### ",
     "",
     "#### Fix",
     "",
-    "- foobar",
+    "- Foobar",
   ]);
 
   expect(
@@ -84,15 +84,15 @@ test("generateChangelog", () => {
     "",
     "#### Feature",
     "",
-    "- hoge",
+    "- Hoge",
     "",
     "#### Fix",
     "",
-    "- foobar",
+    "- Foobar",
     "",
     "#### chore",
     "",
-    "- a",
+    "- A",
   ]);
 
   expect(
@@ -118,15 +118,15 @@ test("generateChangelog", () => {
     "",
     "### Feature",
     "",
-    "- hoge",
+    "- Hoge",
     "",
     "### Fix",
     "",
-    "- foobar",
+    "- Foobar",
     "",
     "### chore",
     "",
-    "- a",
+    "- A",
   ]);
 });
 
@@ -152,15 +152,15 @@ test("generateChangelogGroup", () => {
     "",
     "#### Feature",
     "",
-    "- hoge",
+    "- Hoge",
     "",
     "#### Fix",
     "",
-    "- foobar",
+    "- Foobar",
     "",
     "#### chore",
     "",
-    "- a",
+    "- A",
   ]);
 });
 
@@ -170,7 +170,7 @@ test("generateChangelogPrefix", () => {
       [{ subject: "hoge", hash: "123456" }, { subject: "foobar" }],
       "Feature"
     )
-  ).toBe(["### Feature", "", "- hoge `123456`", "- foobar"].join("\n"));
+  ).toBe(["### Feature", "", "- Hoge `123456`", "- Foobar"].join("\n"));
 });
 
 test("generateChangelogCommit", () => {
@@ -183,7 +183,7 @@ test("generateChangelogCommit", () => {
       "https://github.com/foo/bar/"
     )
   ).toBe(
-    "hogehoge ([#222](https://github.com/foo/bar/pull/222)) `[42d7aa](https://github.com/foo/bar/commit/42d7aa)`"
+    "Hogehoge ([#222](https://github.com/foo/bar/pull/222)) `[42d7aa](https://github.com/foo/bar/commit/42d7aa)`"
   );
   expect(
     generateChangelogCommit(
@@ -194,17 +194,20 @@ test("generateChangelogCommit", () => {
       "foo/bar"
     )
   ).toBe(
-    "hogehoge ([#222](https://github.com/foo/bar/pull/222)) `[42d7aa](https://github.com/foo/bar/commit/42d7aa)`"
+    "Hogehoge ([#222](https://github.com/foo/bar/pull/222)) `[42d7aa](https://github.com/foo/bar/commit/42d7aa)`"
   );
   expect(
     generateChangelogCommit({
       subject: "hogehoge (#222)",
       hash: "42d7aac9d7b3da115bd11347e0e82c887d5b94e7",
     })
-  ).toBe("hogehoge (#222) `42d7aa`");
+  ).toBe("Hogehoge (#222) `42d7aa`");
   expect(generateChangelogCommit({ subject: "hogehoge (#222)" })).toBe(
-    "hogehoge (#222)"
+    "Hogehoge (#222)"
   );
+  expect(
+    generateChangelogCommit({ subject: "hogehoge (#222)" }, undefined, false)
+  ).toBe("hogehoge (#222)");
 });
 
 test("insertChangelog", () => {

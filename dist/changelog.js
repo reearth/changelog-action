@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mergeGroups = exports.detectMerge = exports.trimPrefixAndGroup = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
+exports.mergeGroups = exports.detectMerge = exports.trimPrefixAndGroup = exports.firstUppercase = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
 const lodash_1 = require("lodash");
 function generateChangelog(version, date, commits, options) {
     const groupMerges = detectMerge(Object.fromEntries(Object.entries(options?.group ?? {})
@@ -25,7 +25,7 @@ function generateChangelog(version, date, commits, options) {
             .flatMap(([key, group]) => {
             const title = typeof group === "string" ? group : group ? group.title : undefined;
             return [
-                generateChangelogGroup(commitGroups[key], groupEnabled ? title || key || "" : false, options?.prefix ?? {}, (typeof group === "object" ? group?.url : null) ?? options?.url),
+                generateChangelogGroup(commitGroups[key], groupEnabled ? title || key || "" : false, options?.prefix ?? {}, (typeof group === "object" ? group?.url : null) ?? options?.url, !options?.disableFirstLetterCapitalization),
                 "",
             ];
         })
@@ -33,7 +33,7 @@ function generateChangelog(version, date, commits, options) {
     ].join("\n");
 }
 exports.generateChangelog = generateChangelog;
-function generateChangelogGroup(commits, groupTitle, prefix, url, level = 3) {
+function generateChangelogGroup(commits, groupTitle, prefix, url, capitalizeFirstLetter = true, level = 3) {
     if (!commits.length)
         return "";
     const commitPrefixes = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefix));
@@ -46,30 +46,30 @@ function generateChangelogGroup(commits, groupTitle, prefix, url, level = 3) {
         ...[...Object.entries(prefix), ...unknownPrefixes.map((p) => [p, p])]
             .filter(([key, title]) => title !== false && commitPrefixes[key]?.length)
             .flatMap(([key, title]) => [
-            generateChangelogPrefix(commitPrefixes[key], title || key, url, groupTitle === false ? level : level + 1),
+            generateChangelogPrefix(commitPrefixes[key], title || key, url, capitalizeFirstLetter, groupTitle === false ? level : level + 1),
             "",
         ])
             .slice(0, -1),
     ].join("\n");
 }
 exports.generateChangelogGroup = generateChangelogGroup;
-function generateChangelogPrefix(commits, title, url, level = 3) {
+function generateChangelogPrefix(commits, title, url, capitalizeFirstLetter = true, level = 3) {
     if (!commits?.length)
         return "";
     return [
         ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
-        ...commits.map((c) => "- " + generateChangelogCommit(c, url)),
+        ...commits.map((c) => "- " + generateChangelogCommit(c, url, capitalizeFirstLetter)),
     ].join("\n");
 }
 exports.generateChangelogPrefix = generateChangelogPrefix;
-function generateChangelogCommit(commit, url) {
+function generateChangelogCommit(commit, url, capitalizeFirstLetter = true) {
     url = url?.startsWith("http")
         ? url.replace(/\/$/, "")
         : url
             ? `https://github.com/${url}`
             : "";
     const hash = commit.hash?.slice(0, 6);
-    const subject = trimPrefixAndGroup(commit.subject);
+    const subject = firstUppercase(trimPrefixAndGroup(commit.subject), capitalizeFirstLetter);
     return url
         ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${url}/pull/$1))`)}${hash ? ` \`[${hash}](${url}/commit/${hash})\`` : ""}`
         : `${subject}${hash ? ` \`${hash}\`` : ""}`;
@@ -101,6 +101,10 @@ function formatDate(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 exports.formatDate = formatDate;
+function firstUppercase(subject, enabled) {
+    return enabled ? subject.charAt(0).toUpperCase() + subject.slice(1) : subject;
+}
+exports.firstUppercase = firstUppercase;
 function trimPrefixAndGroup(subject) {
     return subject.replace(/^([a-z]+?)(?:\((.+?)\))?: /, "");
 }

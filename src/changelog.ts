@@ -13,6 +13,7 @@ export type Option = {
   group?: {
     [name: string]: { title?: string; url?: string } | string | false;
   };
+  disableFirstLetterCapitalization?: boolean;
 };
 
 export function generateChangelog(
@@ -57,7 +58,8 @@ export function generateChangelog(
             commitGroups[key],
             groupEnabled ? title || key || "" : false,
             options?.prefix ?? {},
-            (typeof group === "object" ? group?.url : null) ?? options?.url
+            (typeof group === "object" ? group?.url : null) ?? options?.url,
+            !options?.disableFirstLetterCapitalization
           ),
           "",
         ];
@@ -71,6 +73,7 @@ export function generateChangelogGroup(
   groupTitle: string | false,
   prefix: { [name: string]: string | false },
   url?: string,
+  capitalizeFirstLetter = true,
   level = 3
 ): string {
   if (!commits.length) return "";
@@ -92,6 +95,7 @@ export function generateChangelogGroup(
           commitPrefixes[key],
           title || key,
           url,
+          capitalizeFirstLetter,
           groupTitle === false ? level : level + 1
         ),
         "",
@@ -104,23 +108,33 @@ export function generateChangelogPrefix(
   commits: Commit[],
   title?: string,
   url?: string,
+  capitalizeFirstLetter = true,
   level = 3
 ): string {
   if (!commits?.length) return "";
   return [
     ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
-    ...commits.map((c) => "- " + generateChangelogCommit(c, url)),
+    ...commits.map(
+      (c) => "- " + generateChangelogCommit(c, url, capitalizeFirstLetter)
+    ),
   ].join("\n");
 }
 
-export function generateChangelogCommit(commit: Commit, url?: string): string {
+export function generateChangelogCommit(
+  commit: Commit,
+  url?: string,
+  capitalizeFirstLetter = true
+): string {
   url = url?.startsWith("http")
     ? url.replace(/\/$/, "")
     : url
     ? `https://github.com/${url}`
     : "";
   const hash = commit.hash?.slice(0, 6);
-  const subject = trimPrefixAndGroup(commit.subject);
+  const subject = firstUppercase(
+    trimPrefixAndGroup(commit.subject),
+    capitalizeFirstLetter
+  );
   return url
     ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${url}/pull/$1))`)}${
         hash ? ` \`[${hash}](${url}/commit/${hash})\`` : ""
@@ -164,6 +178,10 @@ export function formatDate(date: Date): string {
     2,
     "0"
   )}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function firstUppercase(subject: string, enabled: boolean): string {
+  return enabled ? subject.charAt(0).toUpperCase() + subject.slice(1) : subject;
 }
 
 export function trimPrefixAndGroup(subject: string): string {
