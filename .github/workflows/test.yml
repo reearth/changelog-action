@@ -16,3 +16,5 @@ jobs:
         run: echo $CHANGELOG
         env:
           CHANGELOG: ${{ steps.changelog.output.changelog }}
+      - name: Print CHANGELOG file
+        run: cat CHANGELOG.md
