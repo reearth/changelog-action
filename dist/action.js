@@ -16,7 +16,7 @@ async function exec(version, date, options) {
         throw new Error(`invalid version: ${version}`);
     }
     if (tags.includes(nextVersion)) {
-        throw new Error("The specified tag already exists");
+        throw new Error(`The specified version already exists in tags: ${nextVersion}`);
     }
     const commits = await (0, core_1.getCommits)(latest);
     const result = (0, changelog_1.generateChangelog)(nextVersion, date, commits, options);

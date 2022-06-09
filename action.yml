@@ -12,6 +12,9 @@ inputs:
     description: A new version, "patch", "minor", or "major".
     required: false
     default: minor
+  versionAsIs:
+    description: Use the specified version even if "v" prefix is missing in it.
+    required: false
   date:
     description: Release date
     required: false

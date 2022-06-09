@@ -23,7 +23,9 @@ export async function exec(
   }
 
   if (tags.includes(nextVersion)) {
-    throw new Error("The specified tag already exists");
+    throw new Error(
+      `The specified version already exists in tags: ${nextVersion}`
+    );
   }
 
   const commits = await getCommits(latest);

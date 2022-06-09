@@ -9,6 +9,8 @@ const defaultChangelog =
   "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n";
 
 const version = getInput("version") || process.env.CHANGELOG_VERSION || "minor";
+const versionAsIs =
+  getInput("versionAsIs") || process.env.CHANGELOG_VERSION_ASIS;
 const date = dateOrNow(getInput("date") || process.env.CHANGELOG_DATE);
 const latest = getInput("latest") || process.env.CHANGELOG_LATEST;
 const output =
@@ -18,7 +20,9 @@ const output =
   const config = await loadJSON(getInput("config") || ".github/changelog.json");
   const changelog = await load(output);
 
-  const result = await exec(version, date, config);
+  const actualVersion =
+    !versionAsIs && /^[0-9]/.test(version) ? `v${version}` : version;
+  const result = await exec(actualVersion, date, config);
   const newChangelog = insertChangelog(
     changelog || defaultChangelog,
     result.changelog,
