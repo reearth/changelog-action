@@ -13,16 +13,21 @@ const date = dateOrNow(getInput("date"));
 const latest = getInput("latest");
 const output = getInput("output") || "CHANGELOG.md";
 const config = await loadJSON(getInput("config") || ".github/changelog.json");
-const changelog = (await load(output)) || defaultChangelog;
+const changelog = await load(output);
 
 try {
   const result = await exec(version, date, config);
-
-  setOutput("version", result.version);
-  await promises.writeFile(
-    output,
-    insertChangelog(changelog, result.changelog)
+  const newChangelog = insertChangelog(
+    changelog || defaultChangelog,
+    result.changelog
   );
+
+  setOutput("changelog", result.changelog);
+  setOutput("version", result.version);
+  setOutput("prevVersion", result.prevVersion);
+  setOutput("oldChangelog", changelog);
+  setOutput("newChangelog", newChangelog);
+  await promises.writeFile(output, newChangelog);
 
   if (latest) {
     await promises.writeFile(

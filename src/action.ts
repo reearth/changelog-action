@@ -5,7 +5,11 @@ export async function exec(
   version: string,
   date: Date,
   options?: Option
-): Promise<{ changelog: string; version: string }> {
+): Promise<{
+  changelog: string;
+  version: string;
+  prevVersion: string | undefined;
+}> {
   const { all: tags, latest } = await getTags();
   const nextVersion = latest
     ? bumpVersion(latest, version)
@@ -23,5 +27,5 @@ export async function exec(
   const commits = await getCommits(latest);
   const result = generateChangelog(nextVersion, date, commits, options);
 
-  return { changelog: result, version: nextVersion };
+  return { changelog: result, version: nextVersion, prevVersion: latest };
 }

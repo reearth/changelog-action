@@ -27,5 +27,13 @@ inputs:
     required: false
     default: .github/changelog.json
 outputs:
+  changelog:
+    description: The latest CHANGELOG
   version:
     description: The new version
+  prevVersion:
+    description: The previous version
+  newChangelog:
+    description: The new CHANGELOG
+  oldChangelog:
+    description: The old CHANGELOG
