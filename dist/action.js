@@ -9,7 +9,9 @@ async function exec(version, date, options) {
         ? (0, core_1.bumpVersion)(latest, version)
         : (0, core_1.isValidVersion)(version)
             ? version
-            : (!latest ? "v0.1.0" : undefined);
+            : !latest
+                ? "v0.1.0"
+                : undefined;
     if (!nextVersion) {
         throw new Error(`invalid version: ${version}`);
     }

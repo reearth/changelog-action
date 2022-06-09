@@ -6,45 +6,43 @@ import { exec } from "./action";
 import { insertChangelog } from "./changelog";
 
 const defaultChangelog =
-  "# Changelog\nAll notable changes to this project will be documented in this file.\n";
+  "# Changelog\n\nAll notable changes to this project will be documented in this file.\n";
 
-const version = getInput("version") || "minor";
-const date = dateOrNow(getInput("date"));
-const latest = getInput("latest");
-const output = getInput("output") || "CHANGELOG.md";
+const version = getInput("version") || process.env.CHANGELOG_VERSION || "minor";
+const date = dateOrNow(getInput("date") || process.env.CHANGELOG_DATE);
+const latest = getInput("latest") || process.env.CHANGELOG_LATEST;
+const output =
+  getInput("output") || process.env.CHANGELOG_OUTPUT || "CHANGELOG.md";
 
 (async function () {
   const config = await loadJSON(getInput("config") || ".github/changelog.json");
   const changelog = await load(output);
 
-  try {
-    const result = await exec(version, date, config);
-    const newChangelog = insertChangelog(
-      changelog || defaultChangelog,
+  const result = await exec(version, date, config);
+  const newChangelog = insertChangelog(
+    changelog || defaultChangelog,
+    result.changelog
+  );
+
+  setOutput("changelog", result.changelog);
+  setOutput("version", result.version);
+  setOutput("prevVersion", result.prevVersion);
+  setOutput("oldChangelog", changelog);
+  setOutput("newChangelog", newChangelog);
+  await promises.writeFile(output, newChangelog);
+
+  if (latest) {
+    await promises.writeFile(
+      typeof latest === "string" ? latest : "CHANGELOG_latest.md",
       result.changelog
     );
-
-    setOutput("changelog", result.changelog);
-    setOutput("version", result.version);
-    setOutput("prevVersion", result.prevVersion);
-    setOutput("oldChangelog", changelog);
-    setOutput("newChangelog", newChangelog);
-    await promises.writeFile(output, newChangelog);
-
-    if (latest) {
-      await promises.writeFile(
-        typeof latest === "string" ? latest : "CHANGELOG_latest.md",
-        result.changelog
-      );
-    }
-  } catch (err) {
-    if (typeof err === "object" && err) {
-      setFailed((err as any).message || err);
-    }
   }
-})();
+})().catch((err) => {
+  setFailed((err as any)?.message || err);
+});
 
-function dateOrNow(date: string): Date {
+function dateOrNow(date?: string): Date {
+  if (!date) return new Date();
   let d = new Date(date);
   if (isNaN(d.getTime())) {
     d = new Date();
