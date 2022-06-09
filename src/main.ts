@@ -1,35 +1,62 @@
-import { readFileSync, writeFileSync } from "fs";
+import { promises } from "fs";
 
-import { getInput } from "@actions/core";
+import { getInput, setOutput, setFailed } from "@actions/core";
 
-import { exec, insertChangelog } from "./action";
+import { exec } from "./action";
+import { insertChangelog } from "./changelog";
+
+const defaultChangelog =
+  "# Changelog\nAll notable changes to this project will be documented in this file.\n";
+
+const version = getInput("version") || "minor";
+const date = dateOrNow(getInput("date"));
+const latest = getInput("latest");
+const output = getInput("output") || "CHANGELOG.md";
+const config = await loadJSON(getInput("config") || ".github/changelog.json");
+const changelog = (await load(output)) || defaultChangelog;
 
 try {
-  const result = exec(getInput("version"), !!getInput("tag"));
-  const filePath = getInput("filePath") || "CHANGELOG.md";
+  const result = await exec(version, date, config);
 
-  let changelog = "";
+  setOutput("version", result.version);
+  await promises.writeFile(
+    output,
+    insertChangelog(changelog, result.changelog)
+  );
+
+  if (latest) {
+    await promises.writeFile(
+      typeof latest === "string" ? latest : "CHANGELOG_latest.md",
+      result.changelog
+    );
+  }
+} catch (err) {
+  if (typeof err === "object" && err) {
+    setFailed((err as any).message || err);
+  }
+}
+
+function dateOrNow(date: string): Date {
+  let d = new Date(date);
+  if (isNaN(d.getTime())) {
+    d = new Date();
+  }
+  return d;
+}
+
+async function load(path: string): Promise<string | undefined> {
+  let data: string | undefined;
   try {
-    changelog = readFileSync(filePath, "utf8");
+    data = await promises.readFile(path, "utf8");
   } catch (err) {
     if (!err || typeof err !== "object" || (err as any).code !== "ENOENT") {
       throw err;
     }
   }
+  return data;
+}
 
-  writeFileSync(filePath, insertChangelog(changelog, result));
-
-  const latest = getInput("latest");
-  if (latest) {
-    writeFileSync(
-      typeof latest === "string" ? latest : "CHANGELOG_latest.md",
-      result
-    );
-  }
-} catch (err) {
-  if (typeof err === "object" && err && "message" in err) {
-    console.error((err as any).message);
-    // eslint-disable-next-line no-process-exit
-    process.exit(1);
-  }
+async function loadJSON(path: string): Promise<any> {
+  const data = await load(path);
+  return data ? JSON.parse(data) : undefined;
 }

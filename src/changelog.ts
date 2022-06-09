@@ -7,17 +7,19 @@ export type Commit = {
   hash?: string;
 };
 
+export type Option = {
+  url?: string;
+  prefix?: { [name: string]: string | false };
+  group?: {
+    [name: string]: { title?: string; url?: string } | string | false;
+  };
+};
+
 export function generateChangelog(
   version: string,
   date: Date,
   commits: Commit[],
-  options?: {
-    url?: string;
-    prefix?: { [name: string]: string | false };
-    group?: {
-      [name: string]: { title?: string; url?: string } | string | false;
-    };
-  }
+  options?: Option
 ): string {
   const commitGroups = groupBy(commits, (c) => c.group ?? "");
   const groups = Object.keys(commitGroups);

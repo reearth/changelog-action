@@ -12,16 +12,20 @@ inputs:
     description: A new version, "patch", "minor", or "major".
     required: false
     default: minor
+  date:
+    description: Release date
+    required: false
   latest:
     description: If true, generates CHANGELOG_latest.md also.
     required: false
-  filePath:
+  output:
     description: CHANGELOG.md file path
     required: false
     default: CHANGELOG.md
-  tag:
-    description: If true, creates a new git tag to the current commit.
+  config:
+    description: config file path
     required: false
+    default: .github/changelog.json
 outputs:
   version:
     description: The new version

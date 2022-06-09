@@ -1,32 +1,60 @@
-export type Commit = {};
+import { inc, valid } from "semver";
+import simpleGit from "simple-git";
 
-export function getTags(): string[] {
-  throw "unimplemnted";
+import { type Commit } from "./changelog";
+
+const git = simpleGit();
+
+export function getTags(): Promise<{
+  all: string[];
+  latest: string | undefined;
+}> {
+  return git.tags();
 }
 
-export function getCurrentTag(): string {
-  throw "unimplemnted";
+export async function getCommits(from?: string): Promise<Commit[]> {
+  return (
+    await git.log({
+      from: from ? `refs/tags/${from}` : undefined,
+    })
+  ).all.map((l) => ({
+    subject: l.message,
+    hash: l.hash,
+    ...getPrefixAndGroup(l.message),
+  }));
 }
 
-export function bumpVersion(
-  _version: string,
-  _bump: "patch" | "minor" | "major"
-): string {
-  throw "unimplemnted";
+export function getPrefixAndGroup(subject: string): {
+  prefix: string | undefined;
+  group: string | undefined;
+} {
+  const m = subject.match(/^([a-z]+?)(?:\((.+?)\))?: /);
+  return { prefix: m?.[1], group: m?.[2] };
 }
 
-export function createTag(_tag: string) {
-  throw "unimplemnted";
+export function isValidVersion(version: string): boolean {
+  return !!valid(version);
 }
 
-export function getCommits(_since: string): Commit[] {
-  throw "unimplemnted";
-}
+export function bumpVersion(version: string, next: string): string | null {
+  if (
+    next === "major" ||
+    next === "premajor" ||
+    next === "minor" ||
+    next === "preminor" ||
+    next === "patch" ||
+    next === "prepatch" ||
+    next === "prerelease"
+  ) {
+    const res = inc(version, next);
+    if (!res?.startsWith("v") && version.startsWith("v")) {
+      return `v${res}`;
+    }
+    return res;
+  }
 
-export function generateChangelog(
-  _version: string,
-  _commits: Commit[],
-  _options?: {}
-): string {
-  throw "unimplemnted";
+  if (!next.startsWith("v") && version.startsWith("v")) {
+    return `v${next}`;
+  }
+  return next;
 }
