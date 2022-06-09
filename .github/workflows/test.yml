@@ -10,11 +10,11 @@ jobs:
       - name: Print version
         run: echo "$PREV_VERSION -> $VERSION"
         env:
-          VERSION: ${{ steps.changelog.output.version }}
-          PREV_VERSION: ${{ steps.changelog.output.prev_version }}
+          VERSION: ${{ steps.changelog.outputs.version }}
+          PREV_VERSION: ${{ steps.changelog.outputs.prevVersion }}
       - name: Print CHANGELOG
         run: echo $CHANGELOG
         env:
-          CHANGELOG: ${{ steps.changelog.output.changelog }}
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
       - name: Print CHANGELOG file
         run: cat CHANGELOG.md
