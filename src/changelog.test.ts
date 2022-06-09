@@ -8,6 +8,8 @@ import {
   generateChangelogPrefix,
   generateChangelogCommit,
   trimPrefixAndGroup,
+  detectMerge,
+  mergeGroups,
 } from "./changelog";
 
 test("generateChangelog", () => {
@@ -255,4 +257,27 @@ test("trimPrefixAndGroup", () => {
   expect(trimPrefixAndGroup("feat(web): a")).toBe("a");
   expect(trimPrefixAndGroup("feat: a")).toBe("a");
   expect(trimPrefixAndGroup("a")).toBe("a");
+});
+
+test("detectMerge", () => {
+  expect(detectMerge({ a: "a", b: "b" })).toEqual({});
+  expect(detectMerge({ a: "a", b: "b", c: "b" })).toEqual({ c: "b" });
+  expect(detectMerge({ a: "a", b: "b", c: "b", d: "b" })).toEqual({
+    c: "b",
+    d: "b",
+  });
+});
+
+test("mergeGroups", () => {
+  expect(mergeGroups({ a: ["a"], b: ["b"] }, { b: "a" })).toEqual({
+    a: ["a", "b"],
+  });
+  expect(mergeGroups({ a: ["a"], b: ["b"] }, { b: "c" })).toEqual({
+    a: ["a"],
+    c: ["b"],
+  });
+  expect(mergeGroups({ a: ["a"], b: ["b"] }, {})).toEqual({
+    a: ["a"],
+    b: ["b"],
+  });
 });

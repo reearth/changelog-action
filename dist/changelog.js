@@ -1,9 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.trimPrefixAndGroup = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
+exports.mergeGroups = exports.detectMerge = exports.trimPrefixAndGroup = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
 const lodash_1 = require("lodash");
 function generateChangelog(version, date, commits, options) {
-    const commitGroups = (0, lodash_1.groupBy)(commits, (c) => c.group ?? "");
+    const groupMerges = detectMerge(Object.fromEntries(Object.entries(options?.group ?? {})
+        .map(([k, v]) => [k, typeof v === "string" ? v : v ? v.title : ""])
+        .filter(([, v]) => !!v)));
+    const commitGroups = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.group ?? ""), groupMerges);
     const groups = Object.keys(commitGroups);
     const knownGroups = Object.keys(options?.group ?? []);
     const unknownGroups = groups
@@ -33,7 +36,7 @@ exports.generateChangelog = generateChangelog;
 function generateChangelogGroup(commits, groupTitle, prefix, url, level = 3) {
     if (!commits.length)
         return "";
-    const commitPrefixes = (0, lodash_1.groupBy)(commits, (c) => c.prefix ?? "");
+    const commitPrefixes = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefix));
     const knownPrefixes = Object.keys(prefix);
     const unknownPrefixes = Object.keys(commitPrefixes)
         .filter((p) => p && !knownPrefixes.includes(p))
@@ -102,3 +105,30 @@ function trimPrefixAndGroup(subject) {
     return subject.replace(/^([a-z]+?)(?:\((.+?)\))?: /, "");
 }
 exports.trimPrefixAndGroup = trimPrefixAndGroup;
+function detectMerge(o) {
+    const m = new Map(Object.entries(o)
+        .map(([k, v]) => typeof v === "string" ? [v, k] : null)
+        .filter((e) => !!e)
+        .reverse());
+    return Object.entries(o).reduce((a, [k, v]) => {
+        if (typeof v !== "string")
+            return a;
+        const l = m.get(v);
+        if (!l || l === k)
+            return a;
+        return {
+            ...a,
+            [k]: l,
+        };
+    }, {});
+}
+exports.detectMerge = detectMerge;
+function mergeGroups(o, m) {
+    return Object.entries(o).reduce((a, [k, v]) => m[k]
+        ? {
+            ...a,
+            [m[k]]: [...(a[m[k]] ?? []), ...v],
+        }
+        : { ...a, [k]: v }, {});
+}
+exports.mergeGroups = mergeGroups;

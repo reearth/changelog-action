@@ -8,6 +8,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "start": "node ./dist/main.js",
     "test": "vitest",
     "build": "tsc",
     "lint": "eslint .",

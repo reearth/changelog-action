@@ -21,7 +21,18 @@ export function generateChangelog(
   commits: Commit[],
   options?: Option
 ): string {
-  const commitGroups = groupBy(commits, (c) => c.group ?? "");
+  const groupMerges = detectMerge(
+    Object.fromEntries(
+      Object.entries(options?.group ?? {})
+        .map(([k, v]) => [k, typeof v === "string" ? v : v ? v.title : ""])
+        .filter(([, v]) => !!v)
+    )
+  );
+  const commitGroups = mergeGroups(
+    groupBy(commits, (c) => c.group ?? ""),
+    groupMerges
+  );
+
   const groups = Object.keys(commitGroups);
   const knownGroups = Object.keys(options?.group ?? []);
   const unknownGroups = groups
@@ -63,7 +74,10 @@ export function generateChangelogGroup(
   level = 3
 ): string {
   if (!commits.length) return "";
-  const commitPrefixes = groupBy(commits, (c) => c.prefix ?? "");
+  const commitPrefixes = mergeGroups(
+    groupBy(commits, (c) => c.prefix ?? ""),
+    detectMerge(prefix)
+  );
   const knownPrefixes = Object.keys(prefix);
   const unknownPrefixes = Object.keys(commitPrefixes)
     .filter((p) => p && !knownPrefixes.includes(p))
@@ -154,4 +168,42 @@ export function formatDate(date: Date): string {
 
 export function trimPrefixAndGroup(subject: string): string {
   return subject.replace(/^([a-z]+?)(?:\((.+?)\))?: /, "");
+}
+
+export function detectMerge(o: { [k: string]: unknown }): {
+  [k: string]: string;
+} {
+  const m = new Map(
+    Object.entries(o)
+      .map<[string, string] | null>(([k, v]) =>
+        typeof v === "string" ? [v, k] : null
+      )
+      .filter((e): e is [string, string] => !!e)
+      .reverse()
+  );
+  return Object.entries(o).reduce<{ [k: string]: string }>((a, [k, v]) => {
+    if (typeof v !== "string") return a;
+    const l = m.get(v);
+    if (!l || l === k) return a;
+    return {
+      ...a,
+      [k]: l,
+    };
+  }, {});
+}
+
+export function mergeGroups<T>(
+  o: { [k: string]: T[] },
+  m: { [k: string]: string }
+): { [k: string]: T[] } {
+  return Object.entries(o).reduce<{ [k: string]: T[] }>(
+    (a, [k, v]) =>
+      m[k]
+        ? {
+            ...a,
+            [m[k]]: [...(a[m[k]] ?? []), ...v],
+          }
+        : { ...a, [k]: v },
+    {}
+  );
 }
