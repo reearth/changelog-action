@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
-const lodash_groupby_1 = require("lodash.groupby");
+const lodash_1 = require("lodash");
 function generateChangelog(version, date, commits, options) {
-    const commitGroups = (0, lodash_groupby_1.default)(commits, (c) => c.group ?? "");
+    const commitGroups = (0, lodash_1.groupBy)(commits, (c) => c.group ?? "");
     const groups = Object.keys(commitGroups);
     const knownGroups = Object.keys(options?.group ?? []);
     const unknownGroups = groups.filter((g) => g && !knownGroups.includes(g));
@@ -31,7 +31,7 @@ exports.generateChangelog = generateChangelog;
 function generateChangelogGroup(commits, groupTitle, prefix, url, level = 3) {
     if (!commits.length)
         return "";
-    const commitPrefixes = (0, lodash_groupby_1.default)(commits, (c) => c.prefix ?? "");
+    const commitPrefixes = (0, lodash_1.groupBy)(commits, (c) => c.prefix ?? "");
     const knownPrefixes = Object.keys(prefix);
     const unknownPrefixes = Object.keys(commitPrefixes).filter((p) => p && !knownPrefixes.includes(p));
     return [

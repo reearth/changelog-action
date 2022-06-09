@@ -1,4 +1,4 @@
-import groupBy from "lodash.groupby";
+import { groupBy } from "lodash";
 
 export type Commit = {
   prefix?: string;
