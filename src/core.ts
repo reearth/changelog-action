@@ -13,15 +13,29 @@ export function getTags(): Promise<{
 }
 
 export async function getCommits(from?: string): Promise<Commit[]> {
+  if (!from) {
+    from = (await git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim();
+    if (!from) {
+      throw new Error("there are no commits in this repo");
+    }
+  }
+
   return (
     await git.log({
-      from: from ? `refs/tags/${from}` : undefined,
+      from,
+      to: "HEAD",
     })
-  ).all.map((l) => ({
-    subject: l.message,
-    hash: l.hash,
-    ...getPrefixAndGroup(l.message),
-  }));
+  ).all
+    .filter(
+      (l) =>
+        !l.message.startsWith("Revert ") &&
+        !l.message.startsWith("Merge branch ")
+    )
+    .map((l) => ({
+      subject: l.message,
+      hash: l.hash,
+      ...getPrefixAndGroup(l.message),
+    }));
 }
 
 export function getPrefixAndGroup(subject: string): {
