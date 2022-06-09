@@ -25,7 +25,7 @@ function generateChangelog(version, date, commits, options) {
             .flatMap(([key, group]) => {
             const title = typeof group === "string" ? group : group ? group.title : undefined;
             return [
-                generateChangelogGroup(commitGroups[key], groupEnabled ? title || key || "" : false, options?.prefix ?? {}, (typeof group === "object" ? group?.url : null) ?? options?.url, !options?.disableFirstLetterCapitalization),
+                generateChangelogGroup(commitGroups[key], groupEnabled ? title || key || "" : false, options?.prefix ?? {}, (typeof group === "object" ? group?.url : null) ?? options?.repo, !options?.disableFirstLetterCapitalization),
                 "",
             ];
         })
@@ -33,7 +33,7 @@ function generateChangelog(version, date, commits, options) {
     ].join("\n");
 }
 exports.generateChangelog = generateChangelog;
-function generateChangelogGroup(commits, groupTitle, prefix, url, capitalizeFirstLetter = true, level = 3) {
+function generateChangelogGroup(commits, groupTitle, prefix, repo, capitalizeFirstLetter = true, level = 3) {
     if (!commits.length)
         return "";
     const commitPrefixes = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefix));
@@ -46,35 +46,38 @@ function generateChangelogGroup(commits, groupTitle, prefix, url, capitalizeFirs
         ...[...Object.entries(prefix), ...unknownPrefixes.map((p) => [p, p])]
             .filter(([key, title]) => title !== false && commitPrefixes[key]?.length)
             .flatMap(([key, title]) => [
-            generateChangelogPrefix(commitPrefixes[key], title || key, url, capitalizeFirstLetter, groupTitle === false ? level : level + 1),
+            generateChangelogPrefix(commitPrefixes[key], title || key, repo, capitalizeFirstLetter, groupTitle === false ? level : level + 1),
             "",
         ])
             .slice(0, -1),
     ].join("\n");
 }
 exports.generateChangelogGroup = generateChangelogGroup;
-function generateChangelogPrefix(commits, title, url, capitalizeFirstLetter = true, level = 3) {
+function generateChangelogPrefix(commits, title, repo, capitalizeFirstLetter = true, level = 3) {
     if (!commits?.length)
         return "";
     return [
         ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
-        ...commits.map((c) => "- " + generateChangelogCommit(c, url, capitalizeFirstLetter)),
+        ...commits.map((c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)),
     ].join("\n");
 }
 exports.generateChangelogPrefix = generateChangelogPrefix;
-function generateChangelogCommit(commit, url, capitalizeFirstLetter = true) {
-    url = url?.startsWith("http")
-        ? url.replace(/\/$/, "")
-        : url
-            ? `https://github.com/${url}`
-            : "";
+function generateChangelogCommit(commit, repo, capitalizeFirstLetter = true) {
+    repo = getRepoUrl(repo);
     const hash = commit.hash?.slice(0, 6);
     const subject = firstUppercase(trimPrefixAndGroup(commit.subject), capitalizeFirstLetter);
-    return url
-        ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${url}/pull/$1))`)}${hash ? ` \`[${hash}](${url}/commit/${hash})\`` : ""}`
+    return repo
+        ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${repo}/pull/$1))`)}${hash ? ` \`[${hash}](${repo}/commit/${hash})\`` : ""}`
         : `${subject}${hash ? ` \`${hash}\`` : ""}`;
 }
 exports.generateChangelogCommit = generateChangelogCommit;
+function getRepoUrl(repo) {
+    return repo?.startsWith("http")
+        ? repo.replace(/\/$/, "")
+        : repo
+            ? `https://github.com/${repo}`
+            : "";
+}
 function insertChangelog(changelog, inserting, version) {
     changelog = changelog.trim();
     const r = /^## (v?[0-9].+?)(?: - |$)/im;

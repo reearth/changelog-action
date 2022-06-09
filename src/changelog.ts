@@ -8,7 +8,7 @@ export type Commit = {
 };
 
 export type Option = {
-  url?: string;
+  repo?: string;
   prefix?: { [name: string]: string | false };
   group?: {
     [name: string]: { title?: string; url?: string } | string | false;
@@ -58,7 +58,7 @@ export function generateChangelog(
             commitGroups[key],
             groupEnabled ? title || key || "" : false,
             options?.prefix ?? {},
-            (typeof group === "object" ? group?.url : null) ?? options?.url,
+            (typeof group === "object" ? group?.url : null) ?? options?.repo,
             !options?.disableFirstLetterCapitalization
           ),
           "",
@@ -72,7 +72,7 @@ export function generateChangelogGroup(
   commits: Commit[],
   groupTitle: string | false,
   prefix: { [name: string]: string | false },
-  url?: string,
+  repo?: string,
   capitalizeFirstLetter = true,
   level = 3
 ): string {
@@ -94,7 +94,7 @@ export function generateChangelogGroup(
         generateChangelogPrefix(
           commitPrefixes[key],
           title || key,
-          url,
+          repo,
           capitalizeFirstLetter,
           groupTitle === false ? level : level + 1
         ),
@@ -107,7 +107,7 @@ export function generateChangelogGroup(
 export function generateChangelogPrefix(
   commits: Commit[],
   title?: string,
-  url?: string,
+  repo?: string,
   capitalizeFirstLetter = true,
   level = 3
 ): string {
@@ -115,31 +115,35 @@ export function generateChangelogPrefix(
   return [
     ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
     ...commits.map(
-      (c) => "- " + generateChangelogCommit(c, url, capitalizeFirstLetter)
+      (c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)
     ),
   ].join("\n");
 }
 
 export function generateChangelogCommit(
   commit: Commit,
-  url?: string,
+  repo?: string,
   capitalizeFirstLetter = true
 ): string {
-  url = url?.startsWith("http")
-    ? url.replace(/\/$/, "")
-    : url
-    ? `https://github.com/${url}`
-    : "";
+  repo = getRepoUrl(repo);
   const hash = commit.hash?.slice(0, 6);
   const subject = firstUppercase(
     trimPrefixAndGroup(commit.subject),
     capitalizeFirstLetter
   );
-  return url
-    ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${url}/pull/$1))`)}${
-        hash ? ` \`[${hash}](${url}/commit/${hash})\`` : ""
+  return repo
+    ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${repo}/pull/$1))`)}${
+        hash ? ` \`[${hash}](${repo}/commit/${hash})\`` : ""
       }`
     : `${subject}${hash ? ` \`${hash}\`` : ""}`;
+}
+
+function getRepoUrl(repo?: string): string {
+  return repo?.startsWith("http")
+    ? repo.replace(/\/$/, "")
+    : repo
+    ? `https://github.com/${repo}`
+    : "";
 }
 
 export function insertChangelog(

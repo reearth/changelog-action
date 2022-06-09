@@ -12,7 +12,7 @@ const version = getInput("version") || process.env.CHANGELOG_VERSION || "minor";
 const versionAsIs =
   getInput("versionAsIs") || process.env.CHANGELOG_VERSION_ASIS;
 const date = dateOrNow(getInput("date") || process.env.CHANGELOG_DATE);
-const url = getInput("url") || process.env.CHANGELOG_URL;
+const repo = getInput("repo") || process.env.CHANGELOG_REPO;
 const latest = getInput("latest") || process.env.CHANGELOG_LATEST;
 const output =
   getInput("output") || process.env.CHANGELOG_OUTPUT || "CHANGELOG.md";
@@ -25,7 +25,7 @@ const output =
     !versionAsIs && /^[0-9]/.test(version) ? `v${version}` : version;
   const result = await exec(actualVersion, date, {
     ...(config ?? {}),
-    url: url || config?.url,
+    repo: repo || config?.repo,
   });
   const newChangelog = insertChangelog(
     changelog || defaultChangelog,
