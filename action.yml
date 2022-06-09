@@ -16,7 +16,7 @@ inputs:
     description: Use the specified version even if "v" prefix is missing in it.
     required: false
   date:
-    description: Release date
+    description: 'Release date. Default: current local time'
     required: false
   url:
     description: Repository URL used in CHANGELOG as the link destination for commits and pull requests.

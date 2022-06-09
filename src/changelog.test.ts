@@ -19,6 +19,8 @@ test("generateChangelog", () => {
       new Date(2021, 1, 1),
       [
         { subject: "hoge", prefix: "feat", group: "web" },
+        { subject: "hoge2", prefix: "feat", group: "web2" },
+        { subject: "hoge3", prefix: "feat", group: "web3" },
         { subject: "foobar", prefix: "fix" },
         { subject: "a", prefix: "chore", hash: "xxxxxx", group: "server" },
         { subject: "c", prefix: "ci" },
@@ -31,6 +33,8 @@ test("generateChangelog", () => {
         },
         group: {
           server: { title: "Server", url: "foo/bar" },
+          web2: "web2",
+          web3: { title: "web2" },
         },
       }
     ).split("\n")
@@ -42,6 +46,13 @@ test("generateChangelog", () => {
     "#### chore",
     "",
     "- A `[xxxxxx](https://github.com/foo/bar/commit/xxxxxx)`",
+    "",
+    "### web2",
+    "",
+    "#### Feature",
+    "",
+    "- Hoge2",
+    "- Hoge3",
     "",
     "### web",
     "",
@@ -63,6 +74,7 @@ test("generateChangelog", () => {
       [
         { subject: "hoge", prefix: "feat" },
         { subject: "foobar", prefix: "fix" },
+        { subject: "foobar2", prefix: "fix2" },
         { subject: "a", prefix: "chore" },
         { subject: "c", prefix: "ci" },
       ],
@@ -70,6 +82,7 @@ test("generateChangelog", () => {
         prefix: {
           feat: "Feature",
           fix: "Fix",
+          fix2: "Fix",
           ci: false,
         },
         group: {
@@ -89,6 +102,7 @@ test("generateChangelog", () => {
     "#### Fix",
     "",
     "- Foobar",
+    "- Foobar2",
     "",
     "#### chore",
     "",
