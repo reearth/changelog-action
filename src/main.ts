@@ -6,7 +6,7 @@ import { exec } from "./action";
 import { insertChangelog } from "./changelog";
 
 const defaultChangelog =
-  "# Changelog\n\nAll notable changes to this project will be documented in this file.\n";
+  "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n";
 
 const version = getInput("version") || process.env.CHANGELOG_VERSION || "minor";
 const date = dateOrNow(getInput("date") || process.env.CHANGELOG_DATE);
@@ -21,7 +21,8 @@ const output =
   const result = await exec(version, date, config);
   const newChangelog = insertChangelog(
     changelog || defaultChangelog,
-    result.changelog
+    result.changelog,
+    result.version
   );
 
   setOutput("changelog", result.changelog);

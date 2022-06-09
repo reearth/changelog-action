@@ -67,11 +67,26 @@ function generateChangelogCommit(commit, url) {
         : `${commit.subject}${hash ? ` \`${hash}\`` : ""}`;
 }
 exports.generateChangelogCommit = generateChangelogCommit;
-function insertChangelog(changelog, inserting) {
-    const i = changelog.search(/^## v?[0-9]/im);
-    if (i < 0)
-        return changelog + "\n" + inserting;
-    return changelog.slice(0, i) + inserting.trim() + "\n\n" + changelog.slice(i);
+function insertChangelog(changelog, inserting, version) {
+    changelog = changelog.trim();
+    const r = /^## (v?[0-9].+?)(?: - |$)/im;
+    const m = r.exec(changelog);
+    if (!m || m.index < 0)
+        return (changelog + "\n" + inserting).trim();
+    if (version && version == m[1]) {
+        const n = r.exec(changelog.slice(m.index + m[0].length));
+        if (!n || n.index < 0) {
+            return (changelog.slice(0, m.index) + inserting).trim();
+        }
+        return (changelog.slice(0, m.index) +
+            inserting +
+            "\n\n" +
+            changelog.slice(m.index + m[0].length + n.index)).trim();
+    }
+    return (changelog.slice(0, m.index) +
+        inserting +
+        "\n\n" +
+        changelog.slice(m.index)).trim();
 }
 exports.insertChangelog = insertChangelog;
 function formatDate(date) {

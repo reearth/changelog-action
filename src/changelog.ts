@@ -111,10 +111,35 @@ export function generateChangelogCommit(commit: Commit, url?: string): string {
     : `${commit.subject}${hash ? ` \`${hash}\`` : ""}`;
 }
 
-export function insertChangelog(changelog: string, inserting: string): string {
-  const i = changelog.search(/^## v?[0-9]/im);
-  if (i < 0) return changelog + "\n" + inserting;
-  return changelog.slice(0, i) + inserting.trim() + "\n\n" + changelog.slice(i);
+export function insertChangelog(
+  changelog: string,
+  inserting: string,
+  version?: string
+): string {
+  changelog = changelog.trim();
+  const r = /^## (v?[0-9].+?)(?: - |$)/im;
+  const m = r.exec(changelog);
+  if (!m || m.index < 0) return (changelog + "\n" + inserting).trim();
+
+  if (version && version == m[1]) {
+    const n = r.exec(changelog.slice(m.index + m[0].length));
+    if (!n || n.index < 0) {
+      return (changelog.slice(0, m.index) + inserting).trim();
+    }
+    return (
+      changelog.slice(0, m.index) +
+      inserting +
+      "\n\n" +
+      changelog.slice(m.index + m[0].length + n.index)
+    ).trim();
+  }
+
+  return (
+    changelog.slice(0, m.index) +
+    inserting +
+    "\n\n" +
+    changelog.slice(m.index)
+  ).trim();
 }
 
 export function formatDate(date: Date): string {

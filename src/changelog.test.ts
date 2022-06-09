@@ -232,6 +232,17 @@ test("insertChangelog", () => {
 - foobar`;
 
   expect(insertChangelog(changelog, inserting)).toBe(want);
+  expect(insertChangelog("", "B")).toBe("B");
+  expect(insertChangelog("## v1.0.0 - 2022/01/01\n\n-A", "B", "v1.0.0")).toBe(
+    "B"
+  );
+  expect(
+    insertChangelog(
+      "aaa\n\n## v1.0.0 - 2022/01/01\n\n-A\n\n## v0.1.0",
+      "B",
+      "v1.0.0"
+    )
+  ).toBe("aaa\n\nB\n\n## v0.1.0");
 });
 
 test("formatDate", () => {
