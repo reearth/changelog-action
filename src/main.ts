@@ -12,34 +12,37 @@ const version = getInput("version") || "minor";
 const date = dateOrNow(getInput("date"));
 const latest = getInput("latest");
 const output = getInput("output") || "CHANGELOG.md";
-const config = await loadJSON(getInput("config") || ".github/changelog.json");
-const changelog = await load(output);
 
-try {
-  const result = await exec(version, date, config);
-  const newChangelog = insertChangelog(
-    changelog || defaultChangelog,
-    result.changelog
-  );
+(async function () {
+  const config = await loadJSON(getInput("config") || ".github/changelog.json");
+  const changelog = await load(output);
 
-  setOutput("changelog", result.changelog);
-  setOutput("version", result.version);
-  setOutput("prevVersion", result.prevVersion);
-  setOutput("oldChangelog", changelog);
-  setOutput("newChangelog", newChangelog);
-  await promises.writeFile(output, newChangelog);
-
-  if (latest) {
-    await promises.writeFile(
-      typeof latest === "string" ? latest : "CHANGELOG_latest.md",
+  try {
+    const result = await exec(version, date, config);
+    const newChangelog = insertChangelog(
+      changelog || defaultChangelog,
       result.changelog
     );
+
+    setOutput("changelog", result.changelog);
+    setOutput("version", result.version);
+    setOutput("prevVersion", result.prevVersion);
+    setOutput("oldChangelog", changelog);
+    setOutput("newChangelog", newChangelog);
+    await promises.writeFile(output, newChangelog);
+
+    if (latest) {
+      await promises.writeFile(
+        typeof latest === "string" ? latest : "CHANGELOG_latest.md",
+        result.changelog
+      );
+    }
+  } catch (err) {
+    if (typeof err === "object" && err) {
+      setFailed((err as any).message || err);
+    }
   }
-} catch (err) {
-  if (typeof err === "object" && err) {
-    setFailed((err as any).message || err);
-  }
-}
+})();
 
 function dateOrNow(date: string): Date {
   let d = new Date(date);

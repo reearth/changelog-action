@@ -1,10 +1,13 @@
-import { generateChangelog } from "./changelog";
-import { bumpVersion, getCommits, getTags, isValidVersion } from "./core";
-export async function exec(version, date, options) {
-    const { all: tags, latest } = await getTags();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.exec = void 0;
+const changelog_1 = require("./changelog");
+const core_1 = require("./core");
+async function exec(version, date, options) {
+    const { all: tags, latest } = await (0, core_1.getTags)();
     const nextVersion = latest
-        ? bumpVersion(latest, version)
-        : isValidVersion(version)
+        ? (0, core_1.bumpVersion)(latest, version)
+        : (0, core_1.isValidVersion)(version)
             ? version
             : undefined;
     if (!nextVersion) {
@@ -13,7 +16,8 @@ export async function exec(version, date, options) {
     if (tags.includes(nextVersion)) {
         throw new Error("The specified tag already exists");
     }
-    const commits = await getCommits(latest);
-    const result = generateChangelog(nextVersion, date, commits, options);
+    const commits = await (0, core_1.getCommits)(latest);
+    const result = (0, changelog_1.generateChangelog)(nextVersion, date, commits, options);
     return { changelog: result, version: nextVersion, prevVersion: latest };
 }
+exports.exec = exec;

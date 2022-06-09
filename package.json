@@ -2,7 +2,6 @@
   "name": "changelog-action",
   "version": "0.0.0",
   "main": "dist/main.js",
-  "type": "module",
   "description": "GitHub Action to generates CHANGELOG.md from git commit logs",
   "repository": "https://github.com/reearth/changelog-action",
   "author": "rot1024 <aayhrot@gmail.com>",

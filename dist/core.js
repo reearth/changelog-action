@@ -1,10 +1,14 @@
-import { inc, valid } from "semver";
-import simpleGit from "simple-git";
-const git = simpleGit();
-export function getTags() {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.bumpVersion = exports.isValidVersion = exports.getPrefixAndGroup = exports.getCommits = exports.getTags = void 0;
+const semver_1 = require("semver");
+const simple_git_1 = require("simple-git");
+const git = (0, simple_git_1.default)();
+function getTags() {
     return git.tags();
 }
-export async function getCommits(from) {
+exports.getTags = getTags;
+async function getCommits(from) {
     if (!from) {
         from = (await git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim();
         if (!from) {
@@ -23,14 +27,17 @@ export async function getCommits(from) {
         ...getPrefixAndGroup(l.message),
     }));
 }
-export function getPrefixAndGroup(subject) {
+exports.getCommits = getCommits;
+function getPrefixAndGroup(subject) {
     const m = subject.match(/^([a-z]+?)(?:\((.+?)\))?: /);
     return { prefix: m?.[1], group: m?.[2] };
 }
-export function isValidVersion(version) {
-    return !!valid(version);
+exports.getPrefixAndGroup = getPrefixAndGroup;
+function isValidVersion(version) {
+    return !!(0, semver_1.valid)(version);
 }
-export function bumpVersion(version, next) {
+exports.isValidVersion = isValidVersion;
+function bumpVersion(version, next) {
     if (next === "major" ||
         next === "premajor" ||
         next === "minor" ||
@@ -38,7 +45,7 @@ export function bumpVersion(version, next) {
         next === "patch" ||
         next === "prepatch" ||
         next === "prerelease") {
-        const res = inc(version, next);
+        const res = (0, semver_1.inc)(version, next);
         if (!res?.startsWith("v") && version.startsWith("v")) {
             return `v${res}`;
         }
@@ -49,3 +56,4 @@ export function bumpVersion(version, next) {
     }
     return next;
 }
+exports.bumpVersion = bumpVersion;
