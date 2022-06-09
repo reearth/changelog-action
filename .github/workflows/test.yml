@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: changelog
-        uses: .
+        uses: ./
       - name: Print version
         run: echo $PREV_VERSION -> $VERSION
         env:
