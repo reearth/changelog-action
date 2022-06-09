@@ -8,7 +8,7 @@ jobs:
       - id: changelog
         uses: ./
       - name: Print version
-        run: echo $PREV_VERSION -> $VERSION
+        run: echo "$PREV_VERSION -> $VERSION"
         env:
           VERSION: ${{ steps.changelog.output.version }}
           PREV_VERSION: ${{ steps.changelog.output.prev_version }}
