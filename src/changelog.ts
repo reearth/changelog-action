@@ -104,11 +104,12 @@ export function generateChangelogCommit(commit: Commit, url?: string): string {
     ? `https://github.com/${url}`
     : "";
   const hash = commit.hash?.slice(0, 6);
+  const subject = trimPrefixAndGroup(commit.subject);
   return url
-    ? `${commit.subject.replace(/\(#([0-9]+)\)/g, `([#$1](${url}/pull/$1))`)}${
+    ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${url}/pull/$1))`)}${
         hash ? ` \`[${hash}](${url}/commit/${hash})\`` : ""
       }`
-    : `${commit.subject}${hash ? ` \`${hash}\`` : ""}`;
+    : `${subject}${hash ? ` \`${hash}\`` : ""}`;
 }
 
 export function insertChangelog(
@@ -147,4 +148,8 @@ export function formatDate(date: Date): string {
     2,
     "0"
   )}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function trimPrefixAndGroup(subject: string): string {
+  return subject.replace(/^([a-z]+?)(?:\((.+?)\))?: /, "");
 }

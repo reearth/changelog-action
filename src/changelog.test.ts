@@ -7,6 +7,7 @@ import {
   generateChangelogGroup,
   generateChangelogPrefix,
   generateChangelogCommit,
+  trimPrefixAndGroup,
 } from "./changelog";
 
 test("generateChangelog", () => {
@@ -174,7 +175,7 @@ test("generateChangelogCommit", () => {
   expect(
     generateChangelogCommit(
       {
-        subject: "hogehoge (#222)",
+        subject: "chore: hogehoge (#222)",
         hash: "42d7aac9d7b3da115bd11347e0e82c887d5b94e7",
       },
       "https://github.com/foo/bar/"
@@ -185,7 +186,7 @@ test("generateChangelogCommit", () => {
   expect(
     generateChangelogCommit(
       {
-        subject: "hogehoge (#222)",
+        subject: "chore(web): hogehoge (#222)",
         hash: "42d7aac9d7b3da115bd11347e0e82c887d5b94e7",
       },
       "foo/bar"
@@ -248,4 +249,10 @@ test("insertChangelog", () => {
 test("formatDate", () => {
   expect(formatDate(new Date(2021, 5, 1, 1, 0, 1, 0))).toBe("2021-06-01");
   expect(formatDate(new Date(2021, 11, 10))).toBe("2021-12-10");
+});
+
+test("trimPrefixAndGroup", () => {
+  expect(trimPrefixAndGroup("feat(web): a")).toBe("a");
+  expect(trimPrefixAndGroup("feat: a")).toBe("a");
+  expect(trimPrefixAndGroup("a")).toBe("a");
 });

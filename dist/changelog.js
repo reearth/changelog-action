@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
+exports.trimPrefixAndGroup = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
 const lodash_1 = require("lodash");
 function generateChangelog(version, date, commits, options) {
     const commitGroups = (0, lodash_1.groupBy)(commits, (c) => c.group ?? "");
@@ -62,9 +62,10 @@ function generateChangelogCommit(commit, url) {
             ? `https://github.com/${url}`
             : "";
     const hash = commit.hash?.slice(0, 6);
+    const subject = trimPrefixAndGroup(commit.subject);
     return url
-        ? `${commit.subject.replace(/\(#([0-9]+)\)/g, `([#$1](${url}/pull/$1))`)}${hash ? ` \`[${hash}](${url}/commit/${hash})\`` : ""}`
-        : `${commit.subject}${hash ? ` \`${hash}\`` : ""}`;
+        ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${url}/pull/$1))`)}${hash ? ` \`[${hash}](${url}/commit/${hash})\`` : ""}`
+        : `${subject}${hash ? ` \`${hash}\`` : ""}`;
 }
 exports.generateChangelogCommit = generateChangelogCommit;
 function insertChangelog(changelog, inserting, version) {
@@ -93,3 +94,7 @@ function formatDate(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 exports.formatDate = formatDate;
+function trimPrefixAndGroup(subject) {
+    return subject.replace(/^([a-z]+?)(?:\((.+?)\))?: /, "");
+}
+exports.trimPrefixAndGroup = trimPrefixAndGroup;
