@@ -1,0 +1,17 @@
+on:
+  push:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - id: changelog
+        uses: reearth/changelog-action@main
+      - name: Print version
+        run: echo $PREV_VERSION -> $VERSION
+        env:
+          VERSION: ${{ steps.changelog.output.version }}
+          PREV_VERSION: ${{ steps.changelog.output.prev_version }}
+      - name: Print CHANGELOG
+        run: echo $CHANGELOG
+        env:
+          CHANGELOG: ${{ steps.changelog.output.changelog }}
