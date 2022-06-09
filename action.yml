@@ -18,15 +18,18 @@ inputs:
   date:
     description: Release date
     required: false
+  url:
+    description: Repository URL used in CHANGELOG as the link destination for commits and pull requests.
+    required: false
   latest:
-    description: If true, generates CHANGELOG_latest.md also.
+    description: If true, generates CHANGELOG_latest.md also. You can also specify a file name.
     required: false
   output:
     description: CHANGELOG.md file path
     required: false
     default: CHANGELOG.md
   config:
-    description: config file path
+    description: Config JSON file path
     required: false
     default: .github/changelog.json
 outputs:
