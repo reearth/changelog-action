@@ -3,10 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.mergeGroups = exports.detectMerge = exports.trimPrefixAndGroup = exports.firstUppercase = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
 const lodash_1 = require("lodash");
 function generateChangelog(version, date, commits, options) {
-    const groupMerges = detectMerge(Object.fromEntries(Object.entries(options?.group ?? {})
-        .map(([k, v]) => [k, typeof v === "string" ? v : v ? v.title : ""])
-        .filter(([, v]) => !!v)));
-    const commitGroups = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.group ?? ""), groupMerges);
+    const commitGroups = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.group ?? ""), detectMerge(options?.group ?? {}));
     const groups = Object.keys(commitGroups);
     const knownGroups = Object.keys(options?.group ?? []);
     const unknownGroups = groups
@@ -44,9 +41,11 @@ function generateChangelogGroup(commits, groupTitle, prefix, repo, capitalizeFir
     return [
         ...(groupTitle === false ? [] : [`${"#".repeat(level)} ${groupTitle}`, ""]),
         ...[...Object.entries(prefix), ...unknownPrefixes.map((p) => [p, p])]
-            .filter(([key, title]) => title !== false && commitPrefixes[key]?.length)
-            .flatMap(([key, title]) => [
-            generateChangelogPrefix(commitPrefixes[key], title || key, repo, capitalizeFirstLetter, groupTitle === false ? level : level + 1),
+            .filter(([key, prefix]) => prefix !== false &&
+            (typeof prefix !== "object" || prefix?.title !== false) &&
+            commitPrefixes[key]?.length)
+            .flatMap(([key, prefix]) => [
+            generateChangelogPrefix(commitPrefixes[key], (typeof prefix === "object" ? prefix.title : prefix) || key, repo, capitalizeFirstLetter, groupTitle === false ? level : level + 1),
             "",
         ])
             .slice(0, -1),
@@ -114,13 +113,17 @@ function trimPrefixAndGroup(subject) {
 exports.trimPrefixAndGroup = trimPrefixAndGroup;
 function detectMerge(o) {
     const m = new Map(Object.entries(o)
-        .map(([k, v]) => typeof v === "string" ? [v, k] : null)
+        .map(([k, v]) => {
+        const t = getTitle(v);
+        return t ? [t, k] : null;
+    })
         .filter((e) => !!e)
         .reverse());
     return Object.entries(o).reduce((a, [k, v]) => {
-        if (typeof v !== "string")
+        const t = getTitle(v);
+        if (!t)
             return a;
-        const l = m.get(v);
+        const l = m.get(t);
         if (!l || l === k)
             return a;
         return {
@@ -128,6 +131,16 @@ function detectMerge(o) {
             [k]: l,
         };
     }, {});
+    function getTitle(e) {
+        return typeof e === "string"
+            ? e
+            : typeof e === "object" &&
+                e &&
+                "title" in e &&
+                typeof e.title === "string"
+                ? e.title
+                : "";
+    }
 }
 exports.detectMerge = detectMerge;
 function mergeGroups(o, m) {

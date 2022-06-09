@@ -9,7 +9,7 @@ export type Commit = {
 
 export type Option = {
   repo?: string;
-  prefix?: { [name: string]: string | false };
+  prefix?: { [name: string]: { title?: string | false } | string | false };
   group?: {
     [name: string]: { title?: string; url?: string } | string | false;
   };
@@ -22,16 +22,9 @@ export function generateChangelog(
   commits: Commit[],
   options?: Option
 ): string {
-  const groupMerges = detectMerge(
-    Object.fromEntries(
-      Object.entries(options?.group ?? {})
-        .map(([k, v]) => [k, typeof v === "string" ? v : v ? v.title : ""])
-        .filter(([, v]) => !!v)
-    )
-  );
   const commitGroups = mergeGroups(
     groupBy(commits, (c) => c.group ?? ""),
-    groupMerges
+    detectMerge(options?.group ?? {})
   );
 
   const groups = Object.keys(commitGroups);
@@ -71,7 +64,7 @@ export function generateChangelog(
 export function generateChangelogGroup(
   commits: Commit[],
   groupTitle: string | false,
-  prefix: { [name: string]: string | false },
+  prefix: { [name: string]: { title?: string | false } | string | false },
   repo?: string,
   capitalizeFirstLetter = true,
   level = 3
@@ -89,11 +82,16 @@ export function generateChangelogGroup(
   return [
     ...(groupTitle === false ? [] : [`${"#".repeat(level)} ${groupTitle}`, ""]),
     ...[...Object.entries(prefix), ...unknownPrefixes.map((p) => [p, p])]
-      .filter(([key, title]) => title !== false && commitPrefixes[key]?.length)
-      .flatMap(([key, title]) => [
+      .filter(
+        ([key, prefix]) =>
+          prefix !== false &&
+          (typeof prefix !== "object" || prefix?.title !== false) &&
+          commitPrefixes[key]?.length
+      )
+      .flatMap(([key, prefix]) => [
         generateChangelogPrefix(
           commitPrefixes[key],
-          title || key,
+          (typeof prefix === "object" ? prefix.title : prefix) || key,
           repo,
           capitalizeFirstLetter,
           groupTitle === false ? level : level + 1
@@ -197,21 +195,35 @@ export function detectMerge(o: { [k: string]: unknown }): {
 } {
   const m = new Map(
     Object.entries(o)
-      .map<[string, string] | null>(([k, v]) =>
-        typeof v === "string" ? [v, k] : null
-      )
+      .map<[string, string] | null>(([k, v]) => {
+        const t = getTitle(v);
+        return t ? [t, k] : null;
+      })
       .filter((e): e is [string, string] => !!e)
       .reverse()
   );
+
   return Object.entries(o).reduce<{ [k: string]: string }>((a, [k, v]) => {
-    if (typeof v !== "string") return a;
-    const l = m.get(v);
+    const t = getTitle(v);
+    if (!t) return a;
+    const l = m.get(t);
     if (!l || l === k) return a;
     return {
       ...a,
       [k]: l,
     };
   }, {});
+
+  function getTitle(e: unknown): string {
+    return typeof e === "string"
+      ? e
+      : typeof e === "object" &&
+        e &&
+        "title" in e &&
+        typeof (e as any).title === "string"
+      ? (e as any).title
+      : "";
+  }
 }
 
 export function mergeGroups<T>(

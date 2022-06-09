@@ -81,7 +81,7 @@ test("generateChangelog", () => {
       {
         prefix: {
           feat: "Feature",
-          fix: "Fix",
+          fix: { title: "Fix" },
           fix2: "Fix",
           ci: false,
         },
@@ -279,6 +279,9 @@ test("trimPrefixAndGroup", () => {
 test("detectMerge", () => {
   expect(detectMerge({ a: "a", b: "b" })).toEqual({});
   expect(detectMerge({ a: "a", b: "b", c: "b" })).toEqual({ c: "b" });
+  expect(detectMerge({ a: "a", b: "b", c: { title: "b" } })).toEqual({
+    c: "b",
+  });
   expect(detectMerge({ a: "a", b: "b", c: "b", d: "b" })).toEqual({
     c: "b",
     d: "b",
