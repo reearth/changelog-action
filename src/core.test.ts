@@ -1,12 +1,18 @@
 import { test, expect } from "vitest";
 
-import { bumpVersion, getPrefixAndGroup } from "./core";
+import { bumpVersion, getPrefixAndGroup, trimPrefixAndGroup } from "./core";
 
 test("getPrefixAndGroup", () => {
   expect(getPrefixAndGroup("feat(web): hogehoge")).toEqual({
     prefix: "feat",
     group: "web",
   });
+});
+
+test("trimPrefixAndGroup", () => {
+  expect(trimPrefixAndGroup("feat(web): a")).toBe("a");
+  expect(trimPrefixAndGroup("feat: a")).toBe("a");
+  expect(trimPrefixAndGroup("a")).toBe("a");
 });
 
 test("bumpVersion", () => {

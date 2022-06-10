@@ -32,18 +32,25 @@ export async function getCommits(from?: string): Promise<Commit[]> {
         !l.message.startsWith("Merge branch ")
     )
     .map((l) => ({
-      subject: l.message,
+      subject: trimPrefixAndGroup(l.message),
       hash: l.hash,
+      date: new Date(l.date),
       ...getPrefixAndGroup(l.message),
     }));
 }
+
+const prefixAndGroupReg = /^([a-z]+?)(?:\((.+?)\))?: /;
 
 export function getPrefixAndGroup(subject: string): {
   prefix: string | undefined;
   group: string | undefined;
 } {
-  const m = subject.match(/^([a-z]+?)(?:\((.+?)\))?: /);
+  const m = subject.match(prefixAndGroupReg);
   return { prefix: m?.[1], group: m?.[2] };
+}
+
+export function trimPrefixAndGroup(subject: string): string {
+  return subject.replace(prefixAndGroupReg, "");
 }
 
 export function isValidVersion(version: string): boolean {

@@ -5,6 +5,7 @@ export type Commit = {
   group?: string;
   subject: string;
   hash?: string;
+  date: Date;
 };
 
 export type Option = {
@@ -112,9 +113,12 @@ export function generateChangelogPrefix(
   if (!commits?.length) return "";
   return [
     ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
-    ...commits.map(
-      (c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)
-    ),
+    ...commits
+      .concat()
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .map(
+        (c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)
+      ),
   ].join("\n");
 }
 
@@ -125,10 +129,7 @@ export function generateChangelogCommit(
 ): string {
   repo = getRepoUrl(repo);
   const hash = commit.hash?.slice(0, 6);
-  const subject = firstUppercase(
-    trimPrefixAndGroup(commit.subject),
-    capitalizeFirstLetter
-  );
+  const subject = firstUppercase(commit.subject, capitalizeFirstLetter);
   return repo
     ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${repo}/pull/$1))`)}${
         hash ? ` \`[${hash}](${repo}/commit/${hash})\`` : ""
@@ -184,10 +185,6 @@ export function formatDate(date: Date): string {
 
 export function firstUppercase(subject: string, enabled: boolean): string {
   return enabled ? subject.charAt(0).toUpperCase() + subject.slice(1) : subject;
-}
-
-export function trimPrefixAndGroup(subject: string): string {
-  return subject.replace(/^([a-z]+?)(?:\((.+?)\))?: /, "");
 }
 
 export function detectMerge(o: { [k: string]: unknown }): {

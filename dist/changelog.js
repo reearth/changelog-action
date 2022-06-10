@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mergeGroups = exports.detectMerge = exports.trimPrefixAndGroup = exports.firstUppercase = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
+exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
 const lodash_1 = require("lodash");
 function generateChangelog(version, date, commits, options) {
     const commitGroups = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.group ?? ""), detectMerge(options?.group ?? {}));
@@ -57,14 +57,17 @@ function generateChangelogPrefix(commits, title, repo, capitalizeFirstLetter = t
         return "";
     return [
         ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
-        ...commits.map((c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)),
+        ...commits
+            .concat()
+            .sort((a, b) => b.date.getTime() - a.date.getTime())
+            .map((c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)),
     ].join("\n");
 }
 exports.generateChangelogPrefix = generateChangelogPrefix;
 function generateChangelogCommit(commit, repo, capitalizeFirstLetter = true) {
     repo = getRepoUrl(repo);
     const hash = commit.hash?.slice(0, 6);
-    const subject = firstUppercase(trimPrefixAndGroup(commit.subject), capitalizeFirstLetter);
+    const subject = firstUppercase(commit.subject, capitalizeFirstLetter);
     return repo
         ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${repo}/pull/$1))`)}${hash ? ` \`[${hash}](${repo}/commit/${hash})\`` : ""}`
         : `${subject}${hash ? ` \`${hash}\`` : ""}`;
@@ -107,10 +110,6 @@ function firstUppercase(subject, enabled) {
     return enabled ? subject.charAt(0).toUpperCase() + subject.slice(1) : subject;
 }
 exports.firstUppercase = firstUppercase;
-function trimPrefixAndGroup(subject) {
-    return subject.replace(/^([a-z]+?)(?:\((.+?)\))?: /, "");
-}
-exports.trimPrefixAndGroup = trimPrefixAndGroup;
 function detectMerge(o) {
     const m = new Map(Object.entries(o)
         .map(([k, v]) => {

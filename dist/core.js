@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bumpVersion = exports.isValidVersion = exports.getPrefixAndGroup = exports.getCommits = exports.getTags = void 0;
+exports.bumpVersion = exports.isValidVersion = exports.trimPrefixAndGroup = exports.getPrefixAndGroup = exports.getCommits = exports.getTags = void 0;
 const semver_1 = require("semver");
 const simple_git_1 = require("simple-git");
 const git = (0, simple_git_1.default)();
@@ -22,17 +22,23 @@ async function getCommits(from) {
         .filter((l) => !l.message.startsWith("Revert ") &&
         !l.message.startsWith("Merge branch "))
         .map((l) => ({
-        subject: l.message,
+        subject: trimPrefixAndGroup(l.message),
         hash: l.hash,
+        date: new Date(l.date),
         ...getPrefixAndGroup(l.message),
     }));
 }
 exports.getCommits = getCommits;
+const prefixAndGroupReg = /^([a-z]+?)(?:\((.+?)\))?: /;
 function getPrefixAndGroup(subject) {
-    const m = subject.match(/^([a-z]+?)(?:\((.+?)\))?: /);
+    const m = subject.match(prefixAndGroupReg);
     return { prefix: m?.[1], group: m?.[2] };
 }
 exports.getPrefixAndGroup = getPrefixAndGroup;
+function trimPrefixAndGroup(subject) {
+    return subject.replace(prefixAndGroupReg, "");
+}
+exports.trimPrefixAndGroup = trimPrefixAndGroup;
 function isValidVersion(version) {
     return !!(0, semver_1.valid)(version);
 }

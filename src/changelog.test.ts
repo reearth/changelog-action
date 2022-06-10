@@ -7,7 +7,6 @@ import {
   generateChangelogGroup,
   generateChangelogPrefix,
   generateChangelogCommit,
-  trimPrefixAndGroup,
   detectMerge,
   mergeGroups,
 } from "./changelog";
@@ -18,12 +17,33 @@ test("generateChangelog", () => {
       "v1.0.0",
       new Date(2021, 1, 1),
       [
-        { subject: "hoge", prefix: "feat", group: "web" },
-        { subject: "hoge2", prefix: "feat", group: "web2" },
-        { subject: "hoge3", prefix: "feat", group: "web3" },
-        { subject: "foobar", prefix: "fix" },
-        { subject: "a", prefix: "chore", hash: "xxxxxx", group: "server" },
-        { subject: "c", prefix: "ci" },
+        {
+          subject: "hoge",
+          prefix: "feat",
+          group: "web",
+          date: new Date(2021, 1, 1),
+        },
+        {
+          subject: "hoge2",
+          prefix: "feat",
+          group: "web2",
+          date: new Date(2021, 1, 1),
+        },
+        {
+          subject: "hoge3",
+          prefix: "feat",
+          group: "web3",
+          date: new Date(2021, 1, 1),
+        },
+        { subject: "foobar", prefix: "fix", date: new Date() },
+        {
+          subject: "a",
+          prefix: "chore",
+          hash: "xxxxxx",
+          group: "server",
+          date: new Date(2021, 1, 1),
+        },
+        { subject: "c", prefix: "ci", date: new Date(2021, 1, 1) },
       ],
       {
         prefix: {
@@ -72,11 +92,11 @@ test("generateChangelog", () => {
       "v1.0.0",
       new Date(2021, 1, 1),
       [
-        { subject: "hoge", prefix: "feat" },
-        { subject: "foobar", prefix: "fix" },
-        { subject: "foobar2", prefix: "fix2" },
-        { subject: "a", prefix: "chore" },
-        { subject: "c", prefix: "ci" },
+        { subject: "hoge", prefix: "feat", date: new Date(2021, 1, 1) },
+        { subject: "foobar", prefix: "fix", date: new Date(2021, 1, 1) },
+        { subject: "foobar2", prefix: "fix2", date: new Date(2021, 1, 1) },
+        { subject: "a", prefix: "chore", date: new Date(2021, 1, 1) },
+        { subject: "c", prefix: "ci", date: new Date(2021, 1, 1) },
       ],
       {
         prefix: {
@@ -114,10 +134,10 @@ test("generateChangelog", () => {
       "v1.0.0",
       new Date(2021, 1, 1),
       [
-        { subject: "hoge", prefix: "feat" },
-        { subject: "foobar", prefix: "fix" },
-        { subject: "a", prefix: "chore" },
-        { subject: "c", prefix: "ci" },
+        { subject: "hoge", prefix: "feat", date: new Date(2021, 1, 1) },
+        { subject: "foobar", prefix: "fix", date: new Date(2021, 1, 1) },
+        { subject: "a", prefix: "chore", date: new Date(2021, 1, 1) },
+        { subject: "c", prefix: "ci", date: new Date(2021, 1, 1) },
       ],
       {
         prefix: {
@@ -148,11 +168,11 @@ test("generateChangelogGroup", () => {
   expect(
     generateChangelogGroup(
       [
-        { subject: "hoge", prefix: "feat" },
-        { subject: "foobar", prefix: "fix" },
-        { subject: "a", prefix: "chore" },
-        { subject: "b" },
-        { subject: "c", prefix: "ci" },
+        { subject: "hoge", prefix: "feat", date: new Date(2000, 1, 1) },
+        { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
+        { subject: "a", prefix: "chore", date: new Date(2000, 1, 1) },
+        { subject: "b", date: new Date(2000, 1, 1) },
+        { subject: "c", prefix: "ci", date: new Date(2000, 1, 1) },
       ],
       "Group",
       {
@@ -181,7 +201,10 @@ test("generateChangelogGroup", () => {
 test("generateChangelogPrefix", () => {
   expect(
     generateChangelogPrefix(
-      [{ subject: "hoge", hash: "123456" }, { subject: "foobar" }],
+      [
+        { subject: "foobar", date: new Date(2021, 1, 1) },
+        { subject: "hoge", hash: "123456", date: new Date(2021, 2, 1) },
+      ],
       "Feature"
     )
   ).toBe(["### Feature", "", "- Hoge `123456`", "- Foobar"].join("\n"));
@@ -191,8 +214,9 @@ test("generateChangelogCommit", () => {
   expect(
     generateChangelogCommit(
       {
-        subject: "chore: hogehoge (#222)",
+        subject: "hogehoge (#222)",
         hash: "42d7aac9d7b3da115bd11347e0e82c887d5b94e7",
+        date: new Date(2021, 1, 1),
       },
       "https://github.com/foo/bar/"
     )
@@ -200,27 +224,24 @@ test("generateChangelogCommit", () => {
     "Hogehoge ([#222](https://github.com/foo/bar/pull/222)) `[42d7aa](https://github.com/foo/bar/commit/42d7aa)`"
   );
   expect(
-    generateChangelogCommit(
-      {
-        subject: "chore(web): hogehoge (#222)",
-        hash: "42d7aac9d7b3da115bd11347e0e82c887d5b94e7",
-      },
-      "foo/bar"
-    )
-  ).toBe(
-    "Hogehoge ([#222](https://github.com/foo/bar/pull/222)) `[42d7aa](https://github.com/foo/bar/commit/42d7aa)`"
-  );
+    generateChangelogCommit({
+      subject: "hogehoge (#222)",
+      hash: "42d7aa",
+      date: new Date(2021, 1, 1),
+    })
+  ).toBe("Hogehoge (#222) `42d7aa`");
   expect(
     generateChangelogCommit({
       subject: "hogehoge (#222)",
-      hash: "42d7aac9d7b3da115bd11347e0e82c887d5b94e7",
+      date: new Date(2021, 1, 1),
     })
-  ).toBe("Hogehoge (#222) `42d7aa`");
-  expect(generateChangelogCommit({ subject: "hogehoge (#222)" })).toBe(
-    "Hogehoge (#222)"
-  );
+  ).toBe("Hogehoge (#222)");
   expect(
-    generateChangelogCommit({ subject: "hogehoge (#222)" }, undefined, false)
+    generateChangelogCommit(
+      { subject: "hogehoge (#222)", date: new Date(2021, 1, 1) },
+      undefined,
+      false
+    )
   ).toBe("hogehoge (#222)");
 });
 
@@ -268,12 +289,6 @@ test("insertChangelog", () => {
 test("formatDate", () => {
   expect(formatDate(new Date(2021, 5, 1, 1, 0, 1, 0))).toBe("2021-06-01");
   expect(formatDate(new Date(2021, 11, 10))).toBe("2021-12-10");
-});
-
-test("trimPrefixAndGroup", () => {
-  expect(trimPrefixAndGroup("feat(web): a")).toBe("a");
-  expect(trimPrefixAndGroup("feat: a")).toBe("a");
-  expect(trimPrefixAndGroup("a")).toBe("a");
 });
 
 test("detectMerge", () => {
