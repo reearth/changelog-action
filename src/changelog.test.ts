@@ -14,7 +14,7 @@ import {
 test("generateChangelog", () => {
   expect(
     generateChangelog(
-      "v1.0.0",
+      "1.0.0",
       new Date(2021, 1, 1),
       [
         {
@@ -59,7 +59,7 @@ test("generateChangelog", () => {
       }
     ).split("\n")
   ).toEqual([
-    "## v1.0.0 - 2021-02-01",
+    "## 1.0.0 - 2021-02-01",
     "",
     "### Server",
     "",
@@ -108,10 +108,11 @@ test("generateChangelog", () => {
         group: {
           server: "Server",
         },
+        titleVersionPrefix: "remove",
       }
     ).split("\n")
   ).toEqual([
-    "## v1.0.0 - 2021-02-01",
+    "## 1.0.0 - 2021-02-01",
     "",
     "### ",
     "",
@@ -131,7 +132,7 @@ test("generateChangelog", () => {
 
   expect(
     generateChangelog(
-      "v1.0.0",
+      "1.0.0",
       new Date(2021, 1, 1),
       [
         { subject: "hoge", prefix: "feat", date: new Date(2021, 1, 1) },
@@ -145,6 +146,7 @@ test("generateChangelog", () => {
           fix: "Fix",
           ci: false,
         },
+        titleVersionPrefix: "add",
       }
     ).split("\n")
   ).toEqual([

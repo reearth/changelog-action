@@ -9,8 +9,10 @@ const defaultChangelog =
   "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n";
 
 const version = getInput("version") || process.env.CHANGELOG_VERSION || "minor";
-const versionAsIs =
-  getInput("versionAsIs") || process.env.CHANGELOG_VERSION_ASIS;
+const versionPrefix =
+  getInput("versionPrefix") || process.env.CHANGELOG_VERSION_PREFIX;
+const titleVersionPrefix =
+  getInput("titleVersionPrefix") || process.env.CHANGELOG_TITLE_VERSION_PREFIX;
 const date = dateOrNow(getInput("date") || process.env.CHANGELOG_DATE);
 const repo = getInput("repo") || process.env.CHANGELOG_REPO;
 const latest = getInput("latest") || process.env.CHANGELOG_LATEST;
@@ -22,9 +24,14 @@ const output =
   const changelog = await load(output);
 
   const actualVersion =
-    !versionAsIs && /^[0-9]/.test(version) ? `v${version}` : version;
+    versionPrefix === "add" && /^[0-9]/.test(version)
+      ? `v${version}`
+      : versionPrefix === "remove" && /^v[0-9]/.test(version)
+      ? version.slice(1)
+      : version;
   const result = await exec(actualVersion, date, {
     ...(config ?? {}),
+    titleVersionPrefix: titleVersionPrefix || config?.titleVersionPrefix,
     repo: repo || config?.repo,
   });
   const newChangelog = insertChangelog(

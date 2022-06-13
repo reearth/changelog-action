@@ -12,8 +12,11 @@ inputs:
     description: A new version, "patch", "minor", or "major".
     required: false
     default: minor
-  versionAsIs:
-    description: Use the specified version even if "v" prefix is missing in it.
+  versionPrefix:
+    description: If "add" is specified, v will be prepended to the version as a tag name. "remove" will remove the prefix from the version.
+    required: false
+  titleVersionPrefix:
+    description: If "add" is specified, v will be prepended to the version as the title on the CHANGELOG. "remove" will remove the prefix from the version.
     required: false
   date:
     description: 'Release date. Default: current local time'

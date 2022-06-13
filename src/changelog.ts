@@ -15,6 +15,7 @@ export type Option = {
     [name: string]: { title?: string; url?: string } | string | false;
   };
   disableFirstLetterCapitalization?: boolean;
+  titleVersionPrefix?: "add" | "remove";
 };
 
 export function generateChangelog(
@@ -34,6 +35,19 @@ export function generateChangelog(
     .filter((g) => g && !knownGroups.includes(g))
     .sort();
   const groupEnabled = groups.length > 1 || !!groups[0] || !!knownGroups.length;
+
+  if (
+    options?.titleVersionPrefix == "add" &&
+    version &&
+    !version.startsWith("v")
+  ) {
+    version = `v${version}`;
+  } else if (
+    options?.titleVersionPrefix === "remove" &&
+    version?.startsWith("v")
+  ) {
+    version = version.slice(1);
+  }
 
   return [
     `## ${version} - ${formatDate(date)}`,
@@ -111,6 +125,7 @@ export function generateChangelogPrefix(
   level = 3
 ): string {
   if (!commits?.length) return "";
+
   return [
     ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
     ...commits

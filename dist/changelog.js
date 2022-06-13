@@ -10,6 +10,15 @@ function generateChangelog(version, date, commits, options) {
         .filter((g) => g && !knownGroups.includes(g))
         .sort();
     const groupEnabled = groups.length > 1 || !!groups[0] || !!knownGroups.length;
+    if (options?.titleVersionPrefix == "add" &&
+        version &&
+        !version.startsWith("v")) {
+        version = `v${version}`;
+    }
+    else if (options?.titleVersionPrefix === "remove" &&
+        version?.startsWith("v")) {
+        version = version.slice(1);
+    }
     return [
         `## ${version} - ${formatDate(date)}`,
         "",
