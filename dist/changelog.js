@@ -78,7 +78,7 @@ function generateChangelogCommit(commit, repo, capitalizeFirstLetter = true) {
     const hash = commit.hash?.slice(0, 6);
     const subject = firstUppercase(commit.subject, capitalizeFirstLetter);
     return repo
-        ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${repo}/pull/$1))`)}${hash ? ` \`[${hash}](${repo}/commit/${hash})\`` : ""}`
+        ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${repo}/pull/$1))`)}${hash ? ` [\`${hash}\`](${repo}/commit/${hash})` : ""}`
         : `${subject}${hash ? ` \`${hash}\`` : ""}`;
 }
 exports.generateChangelogCommit = generateChangelogCommit;

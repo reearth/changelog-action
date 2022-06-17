@@ -65,7 +65,7 @@ test("generateChangelog", () => {
     "",
     "#### chore",
     "",
-    "- A `[xxxxxx](https://github.com/foo/bar/commit/xxxxxx)`",
+    "- A [`xxxxxx`](https://github.com/foo/bar/commit/xxxxxx)",
     "",
     "### web2",
     "",
@@ -223,7 +223,7 @@ test("generateChangelogCommit", () => {
       "https://github.com/foo/bar/"
     )
   ).toBe(
-    "Hogehoge ([#222](https://github.com/foo/bar/pull/222)) `[42d7aa](https://github.com/foo/bar/commit/42d7aa)`"
+    "Hogehoge ([#222](https://github.com/foo/bar/pull/222)) [`42d7aa`](https://github.com/foo/bar/commit/42d7aa)"
   );
   expect(
     generateChangelogCommit({

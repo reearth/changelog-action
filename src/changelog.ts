@@ -147,7 +147,7 @@ export function generateChangelogCommit(
   const subject = firstUppercase(commit.subject, capitalizeFirstLetter);
   return repo
     ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${repo}/pull/$1))`)}${
-        hash ? ` \`[${hash}](${repo}/commit/${hash})\`` : ""
+        hash ? ` [\`${hash}\`](${repo}/commit/${hash})` : ""
       }`
     : `${subject}${hash ? ` \`${hash}\`` : ""}`;
 }
