@@ -33,7 +33,7 @@ const output = (0, core_1.getInput)("output") || process.env.CHANGELOG_OUTPUT ||
     (0, core_1.setOutput)("newChangelog", newChangelog);
     await fs_1.promises.writeFile(output, newChangelog);
     if (latest) {
-        await fs_1.promises.writeFile(typeof latest === "string" ? latest : "CHANGELOG_latest.md", result.changelog);
+        await fs_1.promises.writeFile(latest, result.changelog);
     }
 })().catch((err) => {
     (0, core_1.setFailed)(err?.message || err);

@@ -48,10 +48,7 @@ const output =
   await promises.writeFile(output, newChangelog);
 
   if (latest) {
-    await promises.writeFile(
-      typeof latest === "string" ? latest : "CHANGELOG_latest.md",
-      result.changelog
-    );
+    await promises.writeFile(latest, result.changelog);
   }
 })().catch((err) => {
   setFailed((err as any)?.message || err);
