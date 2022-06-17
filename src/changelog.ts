@@ -23,7 +23,7 @@ export function generateChangelog(
   date: Date,
   commits: Commit[],
   options?: Option
-): string {
+): [string, string, string] {
   const commitGroups = mergeGroups(
     groupBy(commits, (c) => c.group ?? ""),
     detectMerge(options?.group ?? {})
@@ -49,8 +49,9 @@ export function generateChangelog(
     version = version.slice(1);
   }
 
-  return [
-    `## ${version} - ${formatDate(date)}`,
+  const formattedDate = formatDate(date);
+  const result = [
+    `## ${version} - ${formattedDate}`,
     "",
     ...[
       ...Object.entries(options?.group ?? []),
@@ -73,7 +74,9 @@ export function generateChangelog(
         ];
       })
       .slice(0, -1),
-  ].join("\n");
+  ];
+
+  return [result.join("\n"), result.slice(2).join("\n"), formattedDate];
 }
 
 export function generateChangelogGroup(

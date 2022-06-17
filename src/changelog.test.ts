@@ -57,7 +57,7 @@ test("generateChangelog", () => {
           web3: { title: "web2" },
         },
       }
-    ).split("\n")
+    )[0].split("\n")
   ).toEqual([
     "## 1.0.0 - 2021-02-01",
     "",
@@ -110,7 +110,7 @@ test("generateChangelog", () => {
         },
         titleVersionPrefix: "remove",
       }
-    ).split("\n")
+    )[0].split("\n")
   ).toEqual([
     "## 1.0.0 - 2021-02-01",
     "",
@@ -148,7 +148,7 @@ test("generateChangelog", () => {
         },
         titleVersionPrefix: "add",
       }
-    ).split("\n")
+    )[0].split("\n")
   ).toEqual([
     "## v1.0.0 - 2021-02-01",
     "",
@@ -163,6 +163,12 @@ test("generateChangelog", () => {
     "### chore",
     "",
     "- A",
+  ]);
+
+  expect(generateChangelog("1.0.0", new Date(2021, 1, 1), [])).toEqual([
+    "## 1.0.0 - 2021-02-01\n",
+    "",
+    "2021-02-01",
   ]);
 });
 

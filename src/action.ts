@@ -7,6 +7,8 @@ export async function exec(
   options?: Option
 ): Promise<{
   changelog: string;
+  changelogWithoutTitle: string;
+  date: string;
   version: string;
   prevVersion: string | undefined;
 }> {
@@ -29,7 +31,18 @@ export async function exec(
   }
 
   const commits = await getCommits(latest);
-  const result = generateChangelog(nextVersion, date, commits, options);
+  const [changelog, changelogWithoutTitle, changelogDate] = generateChangelog(
+    nextVersion,
+    date,
+    commits,
+    options
+  );
 
-  return { changelog: result, version: nextVersion, prevVersion: latest };
+  return {
+    changelog,
+    changelogWithoutTitle,
+    version: nextVersion,
+    prevVersion: latest,
+    date: changelogDate,
+  };
 }

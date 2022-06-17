@@ -26,14 +26,15 @@ const output = (0, core_1.getInput)("output") || process.env.CHANGELOG_OUTPUT ||
         repo: repo || config?.repo,
     });
     const newChangelog = (0, changelog_1.insertChangelog)(changelog || defaultChangelog, result.changelog, result.version);
-    (0, core_1.setOutput)("changelog", result.changelog);
+    (0, core_1.setOutput)("changelog", result.changelogWithoutTitle);
     (0, core_1.setOutput)("version", result.version);
+    (0, core_1.setOutput)("date", result.date);
     (0, core_1.setOutput)("prevVersion", result.prevVersion);
     (0, core_1.setOutput)("oldChangelog", changelog);
     (0, core_1.setOutput)("newChangelog", newChangelog);
     await fs_1.promises.writeFile(output, newChangelog);
     if (latest) {
-        await fs_1.promises.writeFile(latest, result.changelog);
+        await fs_1.promises.writeFile(latest, result.changelogWithoutTitle);
     }
 })().catch((err) => {
     (0, core_1.setFailed)(err?.message || err);

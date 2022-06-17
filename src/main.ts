@@ -40,15 +40,16 @@ const output =
     result.version
   );
 
-  setOutput("changelog", result.changelog);
+  setOutput("changelog", result.changelogWithoutTitle);
   setOutput("version", result.version);
+  setOutput("date", result.date);
   setOutput("prevVersion", result.prevVersion);
   setOutput("oldChangelog", changelog);
   setOutput("newChangelog", newChangelog);
   await promises.writeFile(output, newChangelog);
 
   if (latest) {
-    await promises.writeFile(latest, result.changelog);
+    await promises.writeFile(latest, result.changelogWithoutTitle);
   }
 })().catch((err) => {
   setFailed((err as any)?.message || err);

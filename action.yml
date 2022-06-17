@@ -40,6 +40,8 @@ outputs:
     description: The latest CHANGELOG
   version:
     description: The new version
+  date:
+    description: Date of the new version
   prevVersion:
     description: The previous version
   newChangelog:

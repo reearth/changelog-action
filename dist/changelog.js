@@ -19,8 +19,9 @@ function generateChangelog(version, date, commits, options) {
         version?.startsWith("v")) {
         version = version.slice(1);
     }
-    return [
-        `## ${version} - ${formatDate(date)}`,
+    const formattedDate = formatDate(date);
+    const result = [
+        `## ${version} - ${formattedDate}`,
         "",
         ...[
             ...Object.entries(options?.group ?? []),
@@ -36,7 +37,8 @@ function generateChangelog(version, date, commits, options) {
             ];
         })
             .slice(0, -1),
-    ].join("\n");
+    ];
+    return [result.join("\n"), result.slice(2).join("\n"), formattedDate];
 }
 exports.generateChangelog = generateChangelog;
 function generateChangelogGroup(commits, groupTitle, prefix, repo, capitalizeFirstLetter = true, level = 3) {

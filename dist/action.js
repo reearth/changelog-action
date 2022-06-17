@@ -19,7 +19,13 @@ async function exec(version, date, options) {
         throw new Error(`The specified version already exists in tags: ${nextVersion}`);
     }
     const commits = await (0, core_1.getCommits)(latest);
-    const result = (0, changelog_1.generateChangelog)(nextVersion, date, commits, options);
-    return { changelog: result, version: nextVersion, prevVersion: latest };
+    const [changelog, changelogWithoutTitle, changelogDate] = (0, changelog_1.generateChangelog)(nextVersion, date, commits, options);
+    return {
+        changelog,
+        changelogWithoutTitle,
+        version: nextVersion,
+        prevVersion: latest,
+        date: changelogDate,
+    };
 }
 exports.exec = exec;
