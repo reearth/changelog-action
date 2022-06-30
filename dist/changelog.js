@@ -32,7 +32,14 @@ function generateChangelog(version, date, commits, options) {
             .flatMap(([key, group]) => {
             const title = typeof group === "string" ? group : group ? group.title : undefined;
             return [
-                generateChangelogGroup(commitGroups[key], groupEnabled ? title || key || "" : false, options?.prefix ?? {}, (typeof group === "object" ? group?.url : null) ?? options?.repo, !options?.disableFirstLetterCapitalization),
+                generateChangelogGroup({
+                    commits: commitGroups[key],
+                    groupTitle: groupEnabled ? title || key || "" : false,
+                    prefix: options?.prefix ?? {},
+                    repo: (typeof group === "object" ? group?.url : null) ?? options?.repo,
+                    dedupSameMessages: options?.dedupSameMessages,
+                    capitalizeFirstLetter: !options?.disableFirstLetterCapitalization,
+                }),
                 "",
             ];
         })
@@ -41,7 +48,7 @@ function generateChangelog(version, date, commits, options) {
     return [result.join("\n"), result.slice(2).join("\n"), formattedDate];
 }
 exports.generateChangelog = generateChangelog;
-function generateChangelogGroup(commits, groupTitle, prefix, repo, capitalizeFirstLetter = true, level = 3) {
+function generateChangelogGroup({ commits, groupTitle, prefix, repo, level = 3, ...options }) {
     if (!commits.length)
         return "";
     const commitPrefixes = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefix));
@@ -56,20 +63,28 @@ function generateChangelogGroup(commits, groupTitle, prefix, repo, capitalizeFir
             (typeof prefix !== "object" || prefix?.title !== false) &&
             commitPrefixes[key]?.length)
             .flatMap(([key, prefix]) => [
-            generateChangelogPrefix(commitPrefixes[key], (typeof prefix === "object" ? prefix.title : prefix) || key, repo, capitalizeFirstLetter, groupTitle === false ? level : level + 1),
+            generateChangelogPrefix({
+                commits: commitPrefixes[key],
+                title: (typeof prefix === "object" ? prefix.title : prefix) || key,
+                repo,
+                level: groupTitle === false ? level : level + 1,
+                ...options,
+            }),
             "",
         ])
             .slice(0, -1),
     ].join("\n");
 }
 exports.generateChangelogGroup = generateChangelogGroup;
-function generateChangelogPrefix(commits, title, repo, capitalizeFirstLetter = true, level = 3) {
+function generateChangelogPrefix({ commits, title, repo, dedupSameMessages = true, capitalizeFirstLetter = true, level = 3, }) {
     if (!commits?.length)
         return "";
+    const processdCommits = dedupSameMessages
+        ? (0, lodash_1.uniqBy)(commits, (c) => c.subject)
+        : commits.concat();
     return [
         ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
-        ...commits
-            .concat()
+        ...processdCommits
             .sort((a, b) => b.date.getTime() - a.date.getTime())
             .map((c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)),
     ].join("\n");

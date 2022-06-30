@@ -174,21 +174,22 @@ test("generateChangelog", () => {
 
 test("generateChangelogGroup", () => {
   expect(
-    generateChangelogGroup(
-      [
+    generateChangelogGroup({
+      commits: [
         { subject: "hoge", prefix: "feat", date: new Date(2000, 1, 1) },
+        { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
         { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
         { subject: "a", prefix: "chore", date: new Date(2000, 1, 1) },
         { subject: "b", date: new Date(2000, 1, 1) },
         { subject: "c", prefix: "ci", date: new Date(2000, 1, 1) },
       ],
-      "Group",
-      {
+      groupTitle: "Group",
+      prefix: {
         feat: "Feature",
         fix: "Fix",
         ci: false,
-      }
-    ).split("\n")
+      },
+    }).split("\n")
   ).toEqual([
     "### Group",
     "",
@@ -204,17 +205,28 @@ test("generateChangelogGroup", () => {
     "",
     "- A",
   ]);
+  expect(
+    generateChangelogGroup({
+      commits: [
+        { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
+        { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
+      ],
+      groupTitle: "Group",
+      prefix: {},
+      dedupSameMessages: false,
+    }).split("\n")
+  ).toEqual(["### Group", "", "#### fix", "", "- Foobar", "- Foobar"]);
 });
 
 test("generateChangelogPrefix", () => {
   expect(
-    generateChangelogPrefix(
-      [
+    generateChangelogPrefix({
+      commits: [
         { subject: "foobar", date: new Date(2021, 1, 1) },
         { subject: "hoge", hash: "123456", date: new Date(2021, 2, 1) },
       ],
-      "Feature"
-    )
+      title: "Feature",
+    })
   ).toBe(["### Feature", "", "- Hoge `123456`", "- Foobar"].join("\n"));
 });
 

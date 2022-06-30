@@ -1,4 +1,4 @@
-import { groupBy } from "lodash";
+import { groupBy, uniqBy } from "lodash";
 
 export type Commit = {
   prefix?: string;
@@ -16,6 +16,7 @@ export type Option = {
   };
   disableFirstLetterCapitalization?: boolean;
   titleVersionPrefix?: "add" | "remove";
+  dedupSameMessages?: boolean;
 };
 
 export function generateChangelog(
@@ -63,13 +64,15 @@ export function generateChangelog(
         const title =
           typeof group === "string" ? group : group ? group.title : undefined;
         return [
-          generateChangelogGroup(
-            commitGroups[key],
-            groupEnabled ? title || key || "" : false,
-            options?.prefix ?? {},
-            (typeof group === "object" ? group?.url : null) ?? options?.repo,
-            !options?.disableFirstLetterCapitalization
-          ),
+          generateChangelogGroup({
+            commits: commitGroups[key],
+            groupTitle: groupEnabled ? title || key || "" : false,
+            prefix: options?.prefix ?? {},
+            repo:
+              (typeof group === "object" ? group?.url : null) ?? options?.repo,
+            dedupSameMessages: options?.dedupSameMessages,
+            capitalizeFirstLetter: !options?.disableFirstLetterCapitalization,
+          }),
           "",
         ];
       })
@@ -79,14 +82,22 @@ export function generateChangelog(
   return [result.join("\n"), result.slice(2).join("\n"), formattedDate];
 }
 
-export function generateChangelogGroup(
-  commits: Commit[],
-  groupTitle: string | false,
-  prefix: { [name: string]: { title?: string | false } | string | false },
-  repo?: string,
-  capitalizeFirstLetter = true,
-  level = 3
-): string {
+export function generateChangelogGroup({
+  commits,
+  groupTitle,
+  prefix,
+  repo,
+  level = 3,
+  ...options
+}: {
+  commits: Commit[];
+  groupTitle: string | false;
+  prefix: { [name: string]: { title?: string | false } | string | false };
+  repo?: string;
+  dedupSameMessages?: boolean;
+  capitalizeFirstLetter?: boolean;
+  level?: number;
+}): string {
   if (!commits.length) return "";
   const commitPrefixes = mergeGroups(
     groupBy(commits, (c) => c.prefix ?? ""),
@@ -107,32 +118,42 @@ export function generateChangelogGroup(
           commitPrefixes[key]?.length
       )
       .flatMap(([key, prefix]) => [
-        generateChangelogPrefix(
-          commitPrefixes[key],
-          (typeof prefix === "object" ? prefix.title : prefix) || key,
+        generateChangelogPrefix({
+          commits: commitPrefixes[key],
+          title: (typeof prefix === "object" ? prefix.title : prefix) || key,
           repo,
-          capitalizeFirstLetter,
-          groupTitle === false ? level : level + 1
-        ),
+          level: groupTitle === false ? level : level + 1,
+          ...options,
+        }),
         "",
       ])
       .slice(0, -1),
   ].join("\n");
 }
 
-export function generateChangelogPrefix(
-  commits: Commit[],
-  title?: string,
-  repo?: string,
+export function generateChangelogPrefix({
+  commits,
+  title,
+  repo,
+  dedupSameMessages = true,
   capitalizeFirstLetter = true,
-  level = 3
-): string {
+  level = 3,
+}: {
+  commits: Commit[];
+  title?: string;
+  repo?: string;
+  dedupSameMessages?: boolean;
+  capitalizeFirstLetter?: boolean;
+  level?: number;
+}): string {
   if (!commits?.length) return "";
 
+  const processdCommits = dedupSameMessages
+    ? uniqBy(commits, (c) => c.subject)
+    : commits.concat();
   return [
     ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
-    ...commits
-      .concat()
+    ...processdCommits
       .sort((a, b) => b.date.getTime() - a.date.getTime())
       .map(
         (c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)
