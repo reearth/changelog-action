@@ -1,5 +1,8 @@
 import { format } from "date-fns";
 import { groupBy, uniqBy } from "lodash";
+import * as mustache from "mustache";
+
+const render = mustache.render ?? (mustache as any).default.render;
 
 export type Commit = {
   prefix?: string;
@@ -17,12 +20,22 @@ export type Option = {
     [name: string]: { title?: string; repo?: string } | string | false;
   };
   capitalizeFirstLetter?: boolean;
-  titleVersionPrefix?: "add" | "remove";
   dedupSameMessages?: boolean;
   dateFormat?: string;
+  linkPRs?: boolean;
+  linkHashes?: boolean;
+  versionTemplate?: string;
+  groupTemplate?: string;
+  prefixTemplate?: string;
+  commitTemplate?: string;
 };
 
 const defaultDateFormat = "yyyy-MM-dd";
+const defaultVersionTemplate = "## {{versionWithoutPrefix}} - {{date}}";
+const defaultGroupTemplate = "### {{title}}";
+const defaultPrefixTemplate = "###{{#group}}#{{/group}} {{title}}";
+const defaultCommitTemplate =
+  "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}";
 
 export function generateChangelog(
   version: string,
@@ -42,22 +55,14 @@ export function generateChangelog(
     .sort();
   const groupEnabled = groups.length > 1 || !!groups[0] || !!knownGroups.length;
 
-  if (
-    options?.titleVersionPrefix == "add" &&
-    version &&
-    !version.startsWith("v")
-  ) {
-    version = `v${version}`;
-  } else if (
-    options?.titleVersionPrefix === "remove" &&
-    version?.startsWith("v")
-  ) {
-    version = version.slice(1);
-  }
-
   const formattedDate = format(date, options?.dateFormat || defaultDateFormat);
   const result = [
-    `## ${version} - ${formattedDate}`,
+    render(options?.versionTemplate || defaultVersionTemplate, {
+      version,
+      versionWithPrefix: `v${version.replace(/^v/, "")}`,
+      versionWithoutPrefix: version.replace(/^v/, ""),
+      date: formattedDate,
+    }),
     "",
     ...[
       ...Object.entries(options?.group ?? []),
@@ -71,12 +76,19 @@ export function generateChangelog(
         return [
           generateChangelogGroup({
             commits: commitGroups[key],
+            group: groupEnabled,
+            groupName: key,
             groupTitle: groupEnabled ? title || key || "" : false,
             prefix: options?.prefix ?? {},
             repo:
               (typeof group === "object" ? group?.repo : null) ?? options?.repo,
             dedupSameMessages: options?.dedupSameMessages,
             capitalizeFirstLetter: options?.capitalizeFirstLetter,
+            linkHashes: options?.linkHashes,
+            linkPRs: options?.linkPRs,
+            groupTemplate: options?.groupTemplate,
+            prefixTemplate: options?.prefixTemplate,
+            commitTemplate: options?.commitTemplate,
           }),
           "",
         ];
@@ -89,19 +101,27 @@ export function generateChangelog(
 
 export function generateChangelogGroup({
   commits,
+  group,
+  groupName,
   groupTitle,
   prefix,
   repo,
-  level = 3,
+  groupTemplate = defaultGroupTemplate,
   ...options
 }: {
   commits: Commit[];
+  group?: boolean;
+  groupName?: string;
   groupTitle: string | false;
   prefix: { [name: string]: { title?: string | false } | string | false };
   repo?: string;
   dedupSameMessages?: boolean;
   capitalizeFirstLetter?: boolean;
-  level?: number;
+  linkHashes?: boolean;
+  linkPRs?: boolean;
+  groupTemplate?: string;
+  prefixTemplate?: string;
+  commitTemplate?: string;
 }): string {
   if (!commits.length) return "";
   const commitPrefixes = mergeGroups(
@@ -114,7 +134,18 @@ export function generateChangelogGroup({
     .sort();
 
   return [
-    ...(groupTitle === false ? [] : [`${"#".repeat(level)} ${groupTitle}`, ""]),
+    ...(groupTitle === false
+      ? []
+      : [
+          render(groupTemplate, {
+            group,
+            name: groupName,
+            title: groupTitle,
+            repo,
+            commits,
+          }),
+          "",
+        ]),
     ...[...Object.entries(prefix), ...unknownPrefixes.map((p) => [p, p])]
       .filter(
         ([key, prefix]) =>
@@ -125,9 +156,11 @@ export function generateChangelogGroup({
       .flatMap(([key, prefix]) => [
         generateChangelogPrefix({
           commits: commitPrefixes[key],
+          group,
+          groupName,
+          groupTitle,
           title: (typeof prefix === "object" ? prefix.title : prefix) || key,
           repo,
-          level: groupTitle === false ? level : level + 1,
           ...options,
         }),
         "",
@@ -140,45 +173,112 @@ export function generateChangelogPrefix({
   commits,
   title,
   repo,
+  group,
+  groupName,
+  groupTitle,
   dedupSameMessages = true,
-  capitalizeFirstLetter = true,
-  level = 3,
+  prefixTemplate = defaultPrefixTemplate,
+  commitTemplate,
+  ...options
 }: {
   commits: Commit[];
   title?: string;
   repo?: string;
+  group?: boolean;
+  groupName?: string;
+  groupTitle?: string | false;
   dedupSameMessages?: boolean;
   capitalizeFirstLetter?: boolean;
-  level?: number;
+  linkHashes?: boolean;
+  linkPRs?: boolean;
+  prefixTemplate?: string;
+  commitTemplate?: string;
 }): string {
   if (!commits?.length) return "";
 
-  const processdCommits = dedupSameMessages
-    ? uniqBy(commits, (c) => c.subject)
-    : commits.concat();
+  const processdCommits = (
+    dedupSameMessages ? uniqBy(commits, (c) => c.subject) : commits.concat()
+  ).sort((a, b) => b.date.getTime() - a.date.getTime());
   return [
-    ...(title ? [`${"#".repeat(level)} ${title}`, ""] : []),
-    ...processdCommits
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-      .map(
-        (c) => "- " + generateChangelogCommit(c, repo, capitalizeFirstLetter)
-      ),
+    ...(title
+      ? [
+          render(prefixTemplate, {
+            group,
+            groupName,
+            groupTitle,
+            title,
+            repo,
+            commits: processdCommits,
+          }),
+          "",
+        ]
+      : []),
+    ...processdCommits.map((c) =>
+      generateChangelogCommit({
+        commit: c,
+        repo,
+        template: commitTemplate,
+        ...options,
+      })
+    ),
   ].join("\n");
 }
 
-export function generateChangelogCommit(
-  commit: Commit,
-  repo?: string,
-  capitalizeFirstLetter = true
-): string {
+export function generateChangelogCommit({
+  commit,
+  template = defaultCommitTemplate,
+  repo,
+  capitalizeFirstLetter = true,
+  linkHashes = true,
+  linkPRs = true,
+}: {
+  commit: Commit;
+  template?: string;
+  repo?: string;
+  capitalizeFirstLetter?: boolean;
+  linkHashes?: boolean;
+  linkPRs?: boolean;
+}): string {
   repo = getRepoUrl(repo);
-  const hash = commit.hash?.slice(0, 6);
-  const subject = firstUppercase(commit.subject, capitalizeFirstLetter);
+
+  const shortHash = commit.hash?.slice(0, 6);
+  let message = render(template, {
+    ...commit,
+    subject: firstUppercase(commit.subject, capitalizeFirstLetter),
+    shortHash,
+    repo,
+  });
+
+  if (linkPRs) {
+    message = prLinks(message, repo);
+  }
+
+  if (linkHashes && repo && commit.hash) {
+    message = hashLinks(message, commit.hash, repo);
+  }
+
+  return fixMarkdownLinkedCode(message);
+}
+
+export function prLinks(md: string, repo?: string): string {
   return repo
-    ? `${subject.replace(/\(#([0-9]+)\)/g, `([#$1](${repo}/pull/$1))`)}${
-        hash ? ` [\`${hash}\`](${repo}/commit/${hash})` : ""
-      }`
-    : `${subject}${hash ? ` \`${hash}\`` : ""}`;
+    ? md.replace(/(^|[^[])#(\d+?)(\D|$)/g, `$1[#$2](${repo}/pull/$2)$3`)
+    : md;
+}
+
+export function hashLinks(md: string, hash: string, repo?: string): string {
+  hash = hash.replace(/[^0-9a-z]/g, "");
+  const shortHash = hash.slice(0, 6);
+  return repo
+    ? md.replace(
+        new RegExp(`${hash}|${shortHash}`, "g"),
+        `[$&](${repo}/commit/${shortHash})`
+      )
+    : md;
+}
+
+export function fixMarkdownLinkedCode(md: string): string {
+  return md.replace(/`\[(.+?)\]\((.+?)\)`/g, "[`$1`]($2)");
 }
 
 function getRepoUrl(repo?: string): string {

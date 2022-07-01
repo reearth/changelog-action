@@ -41,7 +41,6 @@ export type Config = Option & {
 
   const result = await exec(actualVersion, date, {
     ...(config ?? {}),
-    titleVersionPrefix: config?.titleVersionPrefix,
     repo:
       actualRepo === "false"
         ? undefined

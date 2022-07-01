@@ -26,7 +26,6 @@ const noEmit = (0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT;
     const actualRepo = repo || config?.repo;
     const result = await (0, action_1.exec)(actualVersion, date, {
         ...(config ?? {}),
-        titleVersionPrefix: config?.titleVersionPrefix,
         repo: actualRepo === "false"
             ? undefined
             : actualRepo || process.env.GITHUB_REPOSITORY,

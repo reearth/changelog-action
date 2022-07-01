@@ -11,12 +11,6 @@ inputs:
   version:
     description: A new version ("vX.X.X"), "patch", "minor", "major", "prepatch", "preminor", "premajor", or "prerelease". Default automatically detects a new version from commits.
     required: false
-  versionPrefix:
-    description: If "add" is specified, v will be prepended to the version as a tag name. "remove" will remove the prefix from the version.
-    required: false
-  titleVersionPrefix:
-    description: If "add" is specified, v will be prepended to the version as the title on the CHANGELOG. "remove" will remove the prefix from the version.
-    required: false
   date:
     description: 'Release date. Default: current local time'
     required: false

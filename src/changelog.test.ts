@@ -8,6 +8,9 @@ import {
   generateChangelogCommit,
   detectMerge,
   mergeGroups,
+  fixMarkdownLinkedCode,
+  prLinks,
+  hashLinks,
 } from "./changelog";
 
 test("generateChangelog", () => {
@@ -107,7 +110,7 @@ test("generateChangelog", () => {
         group: {
           server: "Server",
         },
-        titleVersionPrefix: "remove",
+        versionTemplate: "## {{versionWithoutPrefix}} - {{date}}",
       }
     )[0].split("\n")
   ).toEqual([
@@ -145,7 +148,7 @@ test("generateChangelog", () => {
           fix: "Fix",
           ci: false,
         },
-        titleVersionPrefix: "add",
+        versionTemplate: "## {{versionWithPrefix}} - {{date}}",
       }
     )[0].split("\n")
   ).toEqual([
@@ -182,6 +185,8 @@ test("generateChangelogGroup", () => {
         { subject: "b", date: new Date(2000, 1, 1) },
         { subject: "c", prefix: "ci", date: new Date(2000, 1, 1) },
       ],
+      group: true,
+      groupName: "group",
       groupTitle: "Group",
       prefix: {
         feat: "Feature",
@@ -210,6 +215,8 @@ test("generateChangelogGroup", () => {
         { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
         { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
       ],
+      group: true,
+      groupName: "group",
       groupTitle: "Group",
       prefix: {},
       dedupSameMessages: false,
@@ -229,39 +236,57 @@ test("generateChangelogPrefix", () => {
   ).toBe(["### Feature", "", "- Hoge `123456`", "- Foobar"].join("\n"));
 });
 
+test("prLinks", () => {
+  expect(prLinks("xxx #112 _", "xxx")).toBe("xxx [#112](xxx/pull/112) _");
+  expect(prLinks("xxx [#112](aaa) _", "xxx")).toBe("xxx [#112](aaa) _");
+});
+
+test("hashLinks", () => {
+  expect(hashLinks("xxx a23da9xxxxxxx _ a23da9", "a23da9xxxxxxx", "aaa")).toBe(
+    "xxx [a23da9xxxxxxx](aaa/commit/a23da9) _ [a23da9](aaa/commit/a23da9)"
+  );
+});
+
+test("fixMarkdownLinkedCode", () => {
+  expect(fixMarkdownLinkedCode("xxx `[aaa](bbb)`")).toBe("xxx [`aaa`](bbb)");
+});
+
 test("generateChangelogCommit", () => {
   expect(
-    generateChangelogCommit(
-      {
+    generateChangelogCommit({
+      commit: {
         subject: "hogehoge (#222)",
         hash: "42d7aac9d7b3da115bd11347e0e82c887d5b94e7",
         date: new Date(2021, 1, 1),
       },
-      "https://github.com/foo/bar/"
-    )
-  ).toBe(
-    "Hogehoge ([#222](https://github.com/foo/bar/pull/222)) [`42d7aa`](https://github.com/foo/bar/commit/42d7aa)"
+      repo: "https://github.com/foo/bar/",
+    })
+  ).toEqual(
+    "- Hogehoge ([#222](https://github.com/foo/bar/pull/222)) [`42d7aa`](https://github.com/foo/bar/commit/42d7aa)"
   );
   expect(
     generateChangelogCommit({
-      subject: "hogehoge (#222)",
-      hash: "42d7aa",
-      date: new Date(2021, 1, 1),
+      commit: {
+        subject: "hogehoge (#222)",
+        hash: "42d7aa",
+        date: new Date(2021, 1, 1),
+      },
     })
-  ).toBe("Hogehoge (#222) `42d7aa`");
+  ).toEqual("- Hogehoge (#222) `42d7aa`");
   expect(
     generateChangelogCommit({
-      subject: "hogehoge (#222)",
-      date: new Date(2021, 1, 1),
+      commit: {
+        subject: "hogehoge (#222)",
+        date: new Date(2021, 1, 1),
+      },
     })
-  ).toBe("Hogehoge (#222)");
+  ).toEqual("- Hogehoge (#222)");
   expect(
-    generateChangelogCommit(
-      { subject: "hogehoge (#222)", date: new Date(2021, 1, 1) },
-      undefined,
-      false
-    )
-  ).toBe("hogehoge (#222)");
+    generateChangelogCommit({
+      commit: { subject: "hogehoge (#222)", date: new Date(2021, 1, 1) },
+      capitalizeFirstLetter: false,
+    })
+  ).toEqual("- hogehoge (#222)");
 });
 
 test("insertChangelog", () => {
