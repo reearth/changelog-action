@@ -9,9 +9,8 @@ branding:
  color: purple
 inputs:
   version:
-    description: A new version, "patch", "minor", or "major".
+    description: A new version ("vX.X.X"), "patch", "minor", "major", "prepatch", "preminor", "premajor", or "prerelease". Default automatically detects a new version from commits.
     required: false
-    default: minor
   versionPrefix:
     description: If "add" is specified, v will be prepended to the version as a tag name. "remove" will remove the prefix from the version.
     required: false

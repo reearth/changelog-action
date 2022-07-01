@@ -6,6 +6,7 @@ export type Commit = {
   subject: string;
   hash?: string;
   date: Date;
+  breakingChange?: boolean;
 };
 
 export type Option = {

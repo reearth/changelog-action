@@ -1,5 +1,18 @@
-import { generateChangelog, type Option } from "./changelog";
-import { bumpVersion, getCommits, getTags, isValidVersion } from "./core";
+import { generateChangelog, type Option as BaseOption } from "./changelog";
+import {
+  bumpVersion,
+  getBumpFromCommits,
+  getCommits,
+  getTags,
+  isValidVersion,
+} from "./core";
+
+const initialVersion = "v0.1.0";
+
+export type Option = BaseOption & {
+  minorPrefixes?: string[];
+  initialVersion?: string;
+};
 
 export async function exec(
   version: string,
@@ -13,24 +26,26 @@ export async function exec(
   prevVersion: string | undefined;
 }> {
   const { all: tags, latest } = await getTags();
+  const commits = await getCommits(latest);
+
   const nextVersion = latest
-    ? bumpVersion(latest, version)
+    ? bumpVersion(
+        latest,
+        version || getBumpFromCommits(commits, options?.minorPrefixes)
+      )
     : isValidVersion(version)
     ? version
     : !latest
-    ? "v0.1.0"
+    ? options?.initialVersion || initialVersion
     : undefined;
   if (!nextVersion) {
     throw new Error(`invalid version: ${version}`);
   }
 
   if (tags.includes(nextVersion)) {
-    throw new Error(
-      `The specified version already exists in tags: ${nextVersion}`
-    );
+    throw new Error(`The next version already exists in tags: ${nextVersion}`);
   }
 
-  const commits = await getCommits(latest);
   const [changelog, changelogWithoutTitle, changelogDate] = generateChangelog(
     nextVersion,
     date,

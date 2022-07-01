@@ -35,26 +35,44 @@ export async function getCommits(from?: string): Promise<Commit[]> {
       subject: trimPrefixAndGroup(l.message),
       hash: l.hash,
       date: new Date(l.date),
-      ...getPrefixAndGroup(l.message),
+      ...parseCommitMessage(l.message),
     }));
 }
 
-const prefixAndGroupReg = /^([a-z]+?)(?:\((.+?)\))?: /;
+const commitMessageReg = /^([a-z]+?)(?:\((.+?)\))?(!)?: /;
 
-export function getPrefixAndGroup(subject: string): {
+export function parseCommitMessage(subject: string): {
   prefix: string | undefined;
   group: string | undefined;
+  breakingChange: boolean;
 } {
-  const m = subject.match(prefixAndGroupReg);
-  return { prefix: m?.[1], group: m?.[2] };
+  const m = subject.match(commitMessageReg);
+  return {
+    prefix: m?.[1],
+    group: m?.[2],
+    breakingChange: !!m?.[3] || subject.includes("BREAKING CHANGE"),
+  };
 }
 
 export function trimPrefixAndGroup(subject: string): string {
-  return subject.replace(prefixAndGroupReg, "");
+  return subject.replace(commitMessageReg, "");
 }
 
 export function isValidVersion(version: string): boolean {
   return !!valid(version);
+}
+
+const defaultMinorPrefixes = ["feat"];
+
+export function getBumpFromCommits(
+  commits: Commit[],
+  minorPrefixes = defaultMinorPrefixes
+): "major" | "minor" | "patch" {
+  for (const commit of commits) {
+    if (commit.breakingChange) return "major";
+    if (commit.prefix && minorPrefixes.includes(commit.prefix)) return "minor";
+  }
+  return "patch";
 }
 
 export function bumpVersion(version: string, next: string): string | null {
