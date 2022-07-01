@@ -52,7 +52,7 @@ test("generateChangelog", () => {
           ci: false,
         },
         group: {
-          server: { title: "Server", url: "foo/bar" },
+          server: { title: "Server", repo: "foo/bar" },
           web2: "web2",
           web3: { title: "web2" },
         },
@@ -299,11 +299,20 @@ test("insertChangelog", () => {
   );
   expect(
     insertChangelog(
-      "aaa\n\n## v1.0.0 - 2022/01/01\n\n-A\n\n## v0.1.0",
+      "aaa\n\n## 1.0.0 - 2022/01/01\n\n-A\n\n## v0.1.0",
       "B",
       "v1.0.0"
     )
   ).toBe("aaa\n\nB\n\n## v0.1.0");
+  expect(
+    insertChangelog(
+      "All notable changes to this project will be documented in this file.",
+      "B",
+      "v1.0.0"
+    )
+  ).toBe(
+    "All notable changes to this project will be documented in this file.\n\nB"
+  );
 });
 
 test("formatDate", () => {

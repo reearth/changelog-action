@@ -108,11 +108,11 @@ function getRepoUrl(repo) {
 }
 function insertChangelog(changelog, inserting, version) {
     changelog = changelog.trim();
-    const r = /^## (v?[0-9].+?)(?: - |$)/im;
+    const r = /^## v?([0-9].+?)(?: |$)/im;
     const m = r.exec(changelog);
     if (!m || m.index < 0)
-        return (changelog + "\n" + inserting).trim();
-    if (version && version == m[1]) {
+        return (changelog + "\n\n" + inserting).trim();
+    if (version && version.replace(/^v/, "") == m[1]) {
         const n = r.exec(changelog.slice(m.index + m[0].length));
         if (!n || n.index < 0) {
             return (changelog.slice(0, m.index) + inserting).trim();

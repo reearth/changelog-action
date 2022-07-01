@@ -6,7 +6,7 @@ import { exec } from "./action";
 import { insertChangelog } from "./changelog";
 
 const defaultChangelog =
-  "# Changelog\n\nAll notable changes to this project will be documented in this file.\n\n";
+  "# Changelog\n\nAll notable changes to this project will be documented in this file.";
 
 const version = getInput("version") || process.env.CHANGELOG_VERSION || "minor";
 const versionPrefix =
