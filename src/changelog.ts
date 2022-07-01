@@ -21,9 +21,11 @@ export type Option = {
   };
   capitalizeFirstLetter?: boolean;
   dedupSameMessages?: boolean;
-  dateFormat?: string;
+  separateGroups?: boolean;
   linkPRs?: boolean;
   linkHashes?: boolean;
+  dateFormat?: string;
+  commitDateFormat?: string;
   versionTemplate?: string;
   groupTemplate?: string;
   prefixTemplate?: string;
@@ -53,7 +55,9 @@ export function generateChangelog(
   const unknownGroups = groups
     .filter((g) => g && !knownGroups.includes(g))
     .sort();
-  const groupEnabled = groups.length > 1 || !!groups[0] || !!knownGroups.length;
+  const groupEnabled =
+    options?.separateGroups ??
+    (groups.length > 1 || !!groups[0] || !!knownGroups.length);
 
   const formattedDate = format(date, options?.dateFormat || defaultDateFormat);
   const result = [
@@ -122,6 +126,7 @@ export function generateChangelogGroup({
   groupTemplate?: string;
   prefixTemplate?: string;
   commitTemplate?: string;
+  commitDateFormat?: string;
 }): string {
   if (!commits.length) return "";
   const commitPrefixes = mergeGroups(
@@ -159,6 +164,7 @@ export function generateChangelogGroup({
           group,
           groupName,
           groupTitle,
+          prefix: key,
           title: (typeof prefix === "object" ? prefix.title : prefix) || key,
           repo,
           ...options,
@@ -171,6 +177,7 @@ export function generateChangelogGroup({
 
 export function generateChangelogPrefix({
   commits,
+  prefix,
   title,
   repo,
   group,
@@ -179,9 +186,11 @@ export function generateChangelogPrefix({
   dedupSameMessages = true,
   prefixTemplate = defaultPrefixTemplate,
   commitTemplate,
+  commitDateFormat,
   ...options
 }: {
   commits: Commit[];
+  prefix?: string;
   title?: string;
   repo?: string;
   group?: boolean;
@@ -193,6 +202,7 @@ export function generateChangelogPrefix({
   linkPRs?: boolean;
   prefixTemplate?: string;
   commitTemplate?: string;
+  commitDateFormat?: string;
 }): string {
   if (!commits?.length) return "";
 
@@ -206,6 +216,7 @@ export function generateChangelogPrefix({
             group,
             groupName,
             groupTitle,
+            prefix,
             title,
             repo,
             commits: processdCommits,
@@ -218,6 +229,10 @@ export function generateChangelogPrefix({
         commit: c,
         repo,
         template: commitTemplate,
+        dateFormat: commitDateFormat,
+        group,
+        groupName,
+        groupTitle,
         ...options,
       })
     ),
@@ -228,6 +243,10 @@ export function generateChangelogCommit({
   commit,
   template = defaultCommitTemplate,
   repo,
+  group,
+  groupName,
+  groupTitle,
+  dateFormat = defaultDateFormat,
   capitalizeFirstLetter = true,
   linkHashes = true,
   linkPRs = true,
@@ -235,7 +254,11 @@ export function generateChangelogCommit({
   commit: Commit;
   template?: string;
   repo?: string;
+  group?: boolean;
+  groupName?: string;
+  groupTitle?: string | false;
   capitalizeFirstLetter?: boolean;
+  dateFormat?: string;
   linkHashes?: boolean;
   linkPRs?: boolean;
 }): string {
@@ -244,9 +267,13 @@ export function generateChangelogCommit({
   const shortHash = commit.hash?.slice(0, 6);
   let message = render(template, {
     ...commit,
+    date: format(commit.date, dateFormat),
     subject: firstUppercase(commit.subject, capitalizeFirstLetter),
     shortHash,
     repo,
+    group,
+    groupName,
+    groupTitle,
   });
 
   if (linkPRs) {

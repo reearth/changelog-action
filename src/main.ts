@@ -23,7 +23,6 @@ const noEmit = getInput("noEmit") || process.env.CHANGELOG_NO_EMIT;
 
 export type Config = Option & {
   versionPrefix?: string;
-  titleVersionPrefix?: string;
   defaultChangelog?: string;
 };
 
