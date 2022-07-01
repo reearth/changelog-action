@@ -6,7 +6,7 @@ const action_1 = require("./action");
 const changelog_1 = require("./changelog");
 const githubAction = !!process.env.GITHUB_ACTIONS;
 const defaultChangelog = "# Changelog\n\nAll notable changes to this project will be documented in this file.";
-const version = (0, core_1.getInput)("version") || process.env.CHANGELOG_VERSION || "minor";
+const version = (0, core_1.getInput)("version") || process.env.CHANGELOG_VERSION;
 const date = dateOrNow((0, core_1.getInput)("date") || process.env.CHANGELOG_DATE);
 const repo = (0, core_1.getInput)("repo") || process.env.CHANGELOG_REPO;
 const latest = (0, core_1.getInput)("latest") || process.env.CHANGELOG_LATEST;
@@ -18,13 +18,8 @@ const noEmit = (0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT;
 (async function () {
     const config = await loadJSON(configPath);
     const changelog = await load(output);
-    const actualVersion = config?.versionPrefix === "add" && /^[0-9]/.test(version)
-        ? `v${version}`
-        : config?.versionPrefix === "remove" && /^v[0-9]/.test(version)
-            ? version.slice(1)
-            : version;
     const actualRepo = repo || config?.repo;
-    const result = await (0, action_1.exec)(actualVersion, date, {
+    const result = await (0, action_1.exec)(version, date, {
         ...(config ?? {}),
         repo: actualRepo === "false"
             ? undefined

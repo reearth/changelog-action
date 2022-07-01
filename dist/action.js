@@ -9,7 +9,7 @@ async function exec(version, date, options) {
     const commits = await (0, core_1.getCommits)(latest);
     const nextVersion = latest
         ? (0, core_1.bumpVersion)(latest, version || (0, core_1.getBumpFromCommits)(commits, options?.minorPrefixes))
-        : (0, core_1.isValidVersion)(version)
+        : (0, core_1.isValidVersion)(version || "")
             ? version
             : !latest
                 ? options?.initialVersion || initialVersion

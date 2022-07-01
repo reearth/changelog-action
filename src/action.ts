@@ -15,7 +15,7 @@ export type Option = BaseOption & {
 };
 
 export async function exec(
-  version: string,
+  version: string | undefined,
   date: Date,
   options?: Option
 ): Promise<{
@@ -33,7 +33,7 @@ export async function exec(
         latest,
         version || getBumpFromCommits(commits, options?.minorPrefixes)
       )
-    : isValidVersion(version)
+    : isValidVersion(version || "")
     ? version
     : !latest
     ? options?.initialVersion || initialVersion
