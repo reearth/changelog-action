@@ -27,9 +27,10 @@ exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.ins
 const date_fns_1 = require("date-fns");
 const lodash_1 = require("lodash");
 const mustache = __importStar(require("mustache"));
+const semver_1 = require("semver");
 const render = mustache.render ?? mustache.default.render;
 const defaultDateFormat = "yyyy-MM-dd";
-const defaultVersionTemplate = "## {{versionWithoutPrefix}} - {{date}}";
+const defaultVersionTemplate = "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}";
 const defaultGroupTemplate = "### {{title}}";
 const defaultPrefixTemplate = "###{{#group}}#{{/group}} {{title}}";
 const defaultCommitTemplate = "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}";
@@ -48,6 +49,8 @@ function generateChangelog(version, date, commits, options) {
             version,
             versionWithPrefix: `v${version.replace(/^v/, "")}`,
             versionWithoutPrefix: version.replace(/^v/, ""),
+            unreleased: version === "unreleased",
+            prerelease: !!(0, semver_1.prerelease)(version),
             date: formattedDate,
         }),
         "",

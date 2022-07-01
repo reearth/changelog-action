@@ -47,7 +47,7 @@ function trimPrefixAndGroup(subject) {
 }
 exports.trimPrefixAndGroup = trimPrefixAndGroup;
 function isValidVersion(version) {
-    return !!(0, semver_1.valid)(version);
+    return version === "unreleased" || !!(0, semver_1.valid)(version);
 }
 exports.isValidVersion = isValidVersion;
 const defaultMinorPrefixes = ["feat"];

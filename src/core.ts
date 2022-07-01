@@ -59,7 +59,7 @@ export function trimPrefixAndGroup(subject: string): string {
 }
 
 export function isValidVersion(version: string): boolean {
-  return !!valid(version);
+  return version === "unreleased" || !!valid(version);
 }
 
 const defaultMinorPrefixes = ["feat"];

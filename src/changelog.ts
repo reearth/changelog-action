@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { groupBy, uniqBy } from "lodash";
 import * as mustache from "mustache";
+import { prerelease } from "semver";
 
 const render = mustache.render ?? (mustache as any).default.render;
 
@@ -33,7 +34,8 @@ export type Option = {
 };
 
 const defaultDateFormat = "yyyy-MM-dd";
-const defaultVersionTemplate = "## {{versionWithoutPrefix}} - {{date}}";
+const defaultVersionTemplate =
+  "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}";
 const defaultGroupTemplate = "### {{title}}";
 const defaultPrefixTemplate = "###{{#group}}#{{/group}} {{title}}";
 const defaultCommitTemplate =
@@ -65,6 +67,8 @@ export function generateChangelog(
       version,
       versionWithPrefix: `v${version.replace(/^v/, "")}`,
       versionWithoutPrefix: version.replace(/^v/, ""),
+      unreleased: version === "unreleased",
+      prerelease: !!prerelease(version),
       date: formattedDate,
     }),
     "",

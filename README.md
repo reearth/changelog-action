@@ -60,7 +60,7 @@ Some functions have been purposely stripped down to increase versatility:
 ```yml
 uses: reearth/changelog-action@main
 with:
-  # A new version ("vX.X.X"), "patch", "minor", "major", "prepatch", "preminor", "premajor", or "prerelease".
+  # A new version ("vX.X.X"), "patch", "minor", "major", "prepatch", "preminor", "premajor", "prerelease", or "unreleased".
   # Default automatically detects a new version from commits.
   version:
   # Release date. Default: current local time
@@ -147,7 +147,7 @@ Put `.github/changelog.json`.
   "dateFormat": "yyyy-MM-dd",
   "commitDateFormat": "yyyy-MM-dd",
   "defaultChangelog": "# Changelog\n\nAll notable changes to this project will be documented in this file.",
-  "versionTemplate": "## {{versionWithoutPrefix}} - {{date}}",
+  "versionTemplate": "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}",
   "groupTemplate": "### {{title}}",
   "prefixTemplate": "###{{#group}}#{{/group}} {{title}}",
   "commitTemplate": "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}"
@@ -207,6 +207,8 @@ The following is a list of variables that can be accessed in each template.
 - `versionWithPrefix`: version name with `v` prefix
 - `versionWithoutPrefix`: version name without `v` prefix
 - `date`: formatted date by `dateFormat` option
+- `unreleased`: whether the version is "unreleased"
+- `prerelease`: whether the version is prerelease (e.g. true when version is "0.1.0-beta.1")
 
 ### groupTemplate
 
