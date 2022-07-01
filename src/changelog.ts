@@ -14,7 +14,7 @@ export type Option = {
   group?: {
     [name: string]: { title?: string; url?: string } | string | false;
   };
-  disableFirstLetterCapitalization?: boolean;
+  capitalizeFirstLetter?: boolean;
   titleVersionPrefix?: "add" | "remove";
   dedupSameMessages?: boolean;
 };
@@ -71,7 +71,7 @@ export function generateChangelog(
             repo:
               (typeof group === "object" ? group?.url : null) ?? options?.repo,
             dedupSameMessages: options?.dedupSameMessages,
-            capitalizeFirstLetter: !options?.disableFirstLetterCapitalization,
+            capitalizeFirstLetter: options?.capitalizeFirstLetter,
           }),
           "",
         ];

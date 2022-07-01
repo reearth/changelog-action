@@ -38,7 +38,7 @@ function generateChangelog(version, date, commits, options) {
                     prefix: options?.prefix ?? {},
                     repo: (typeof group === "object" ? group?.url : null) ?? options?.repo,
                     dedupSameMessages: options?.dedupSameMessages,
-                    capitalizeFirstLetter: !options?.disableFirstLetterCapitalization,
+                    capitalizeFirstLetter: options?.capitalizeFirstLetter,
                 }),
                 "",
             ];
