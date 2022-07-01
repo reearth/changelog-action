@@ -13,7 +13,7 @@ export type Option = {
   repo?: string;
   prefix?: { [name: string]: { title?: string | false } | string | false };
   group?: {
-    [name: string]: { title?: string; url?: string } | string | false;
+    [name: string]: { title?: string; repo?: string } | string | false;
   };
   capitalizeFirstLetter?: boolean;
   titleVersionPrefix?: "add" | "remove";
@@ -70,7 +70,7 @@ export function generateChangelog(
             groupTitle: groupEnabled ? title || key || "" : false,
             prefix: options?.prefix ?? {},
             repo:
-              (typeof group === "object" ? group?.url : null) ?? options?.repo,
+              (typeof group === "object" ? group?.repo : null) ?? options?.repo,
             dedupSameMessages: options?.dedupSameMessages,
             capitalizeFirstLetter: options?.capitalizeFirstLetter,
           }),

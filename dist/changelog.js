@@ -36,7 +36,7 @@ function generateChangelog(version, date, commits, options) {
                     commits: commitGroups[key],
                     groupTitle: groupEnabled ? title || key || "" : false,
                     prefix: options?.prefix ?? {},
-                    repo: (typeof group === "object" ? group?.url : null) ?? options?.repo,
+                    repo: (typeof group === "object" ? group?.repo : null) ?? options?.repo,
                     dedupSameMessages: options?.dedupSameMessages,
                     capitalizeFirstLetter: options?.capitalizeFirstLetter,
                 }),
