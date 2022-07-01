@@ -18,9 +18,13 @@ const repo = getInput("repo") || process.env.CHANGELOG_REPO;
 const latest = getInput("latest") || process.env.CHANGELOG_LATEST;
 const output =
   getInput("output") || process.env.CHANGELOG_OUTPUT || "CHANGELOG.md";
+const configPath =
+  getInput("config") ||
+  process.env.CHANGELOG_CONFIG ||
+  ".github/changelog.json";
 
 (async function () {
-  const config = await loadJSON(getInput("config") || ".github/changelog.json");
+  const config = await loadJSON(configPath);
   const changelog = await load(output);
 
   const actualVersion =
@@ -29,11 +33,17 @@ const output =
       : versionPrefix === "remove" && /^v[0-9]/.test(version)
       ? version.slice(1)
       : version;
+  const actualRepo = repo || config?.repo;
+
   const result = await exec(actualVersion, date, {
     ...(config ?? {}),
     titleVersionPrefix: titleVersionPrefix || config?.titleVersionPrefix,
-    repo: repo || config?.repo,
+    repo:
+      actualRepo === "false"
+        ? undefined
+        : actualRepo || process.env.GITHUB_REPOSITORY,
   });
+
   const newChangelog = insertChangelog(
     changelog || defaultChangelog,
     result.changelog,

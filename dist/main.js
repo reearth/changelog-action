@@ -12,18 +12,24 @@ const date = dateOrNow((0, core_1.getInput)("date") || process.env.CHANGELOG_DAT
 const repo = (0, core_1.getInput)("repo") || process.env.CHANGELOG_REPO;
 const latest = (0, core_1.getInput)("latest") || process.env.CHANGELOG_LATEST;
 const output = (0, core_1.getInput)("output") || process.env.CHANGELOG_OUTPUT || "CHANGELOG.md";
+const configPath = (0, core_1.getInput)("config") ||
+    process.env.CHANGELOG_CONFIG ||
+    ".github/changelog.json";
 (async function () {
-    const config = await loadJSON((0, core_1.getInput)("config") || ".github/changelog.json");
+    const config = await loadJSON(configPath);
     const changelog = await load(output);
     const actualVersion = versionPrefix === "add" && /^[0-9]/.test(version)
         ? `v${version}`
         : versionPrefix === "remove" && /^v[0-9]/.test(version)
             ? version.slice(1)
             : version;
+    const actualRepo = repo || config?.repo;
     const result = await (0, action_1.exec)(actualVersion, date, {
         ...(config ?? {}),
         titleVersionPrefix: titleVersionPrefix || config?.titleVersionPrefix,
-        repo: repo || config?.repo,
+        repo: actualRepo === "false"
+            ? undefined
+            : actualRepo || process.env.GITHUB_REPOSITORY,
     });
     const newChangelog = (0, changelog_1.insertChangelog)(changelog || defaultChangelog, result.changelog, result.version);
     (0, core_1.setOutput)("changelog", result.changelogWithoutTitle);
