@@ -4,6 +4,7 @@ const fs_1 = require("fs");
 const core_1 = require("@actions/core");
 const action_1 = require("./action");
 const changelog_1 = require("./changelog");
+const githubAction = !!process.env.GITHUB_ACTIONS;
 const defaultChangelog = "# Changelog\n\nAll notable changes to this project will be documented in this file.";
 const version = (0, core_1.getInput)("version") || process.env.CHANGELOG_VERSION || "minor";
 const versionPrefix = (0, core_1.getInput)("versionPrefix") || process.env.CHANGELOG_VERSION_PREFIX;
@@ -33,15 +34,17 @@ const noEmit = (0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT;
             : actualRepo || process.env.GITHUB_REPOSITORY,
     });
     const newChangelog = (0, changelog_1.insertChangelog)((changelog || config?.defaultChangelog) ?? defaultChangelog, result.changelog, result.version);
-    (0, core_1.setOutput)("changelog", result.changelogWithoutTitle);
-    (0, core_1.setOutput)("version", result.version);
-    (0, core_1.setOutput)("date", result.date);
-    (0, core_1.setOutput)("prevVersion", result.prevVersion);
-    (0, core_1.setOutput)("oldChangelog", changelog);
-    (0, core_1.setOutput)("newChangelog", newChangelog);
+    if (githubAction) {
+        (0, core_1.setOutput)("changelog", result.changelogWithoutTitle);
+        (0, core_1.setOutput)("version", result.version);
+        (0, core_1.setOutput)("date", result.date);
+        (0, core_1.setOutput)("prevVersion", result.prevVersion);
+        (0, core_1.setOutput)("oldChangelog", changelog);
+        (0, core_1.setOutput)("newChangelog", newChangelog);
+    }
     if (!noEmit || noEmit !== "false") {
         await fs_1.promises.writeFile(output, newChangelog);
-        console.log(`Changelog was saved: ${output}`);
+        console.log(`${githubAction ? "\n" : ""}Changelog was saved: ${output}`);
         if (latest) {
             await fs_1.promises.writeFile(latest, result.changelogWithoutTitle);
             console.log(`Changelog only for the new version was saved: ${latest}`);

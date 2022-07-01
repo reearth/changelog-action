@@ -5,6 +5,7 @@ import { getInput, setOutput, setFailed } from "@actions/core";
 import { exec } from "./action";
 import { insertChangelog } from "./changelog";
 
+const githubAction = !!process.env.GITHUB_ACTIONS;
 const defaultChangelog =
   "# Changelog\n\nAll notable changes to this project will be documented in this file.";
 
@@ -51,20 +52,22 @@ const noEmit = getInput("noEmit") || process.env.CHANGELOG_NO_EMIT;
     result.version
   );
 
-  setOutput("changelog", result.changelogWithoutTitle);
-  setOutput("version", result.version);
-  setOutput("date", result.date);
-  setOutput("prevVersion", result.prevVersion);
-  setOutput("oldChangelog", changelog);
-  setOutput("newChangelog", newChangelog);
+  if (githubAction) {
+    setOutput("changelog", result.changelogWithoutTitle);
+    setOutput("version", result.version);
+    setOutput("date", result.date);
+    setOutput("prevVersion", result.prevVersion);
+    setOutput("oldChangelog", changelog);
+    setOutput("newChangelog", newChangelog);
+  }
 
   if (!noEmit || noEmit !== "false") {
     await promises.writeFile(output, newChangelog);
-    console.log(`Changelog was saved: ${output}`);
+    console.log(`${githubAction ? "\n" : ""}Changelog was saved to ${output}`);
 
     if (latest) {
       await promises.writeFile(latest, result.changelogWithoutTitle);
-      console.log(`Changelog only for the new version was saved: ${latest}`);
+      console.log(`Changelog only for the new version was saved to ${latest}`);
     }
   }
 })().catch((err) => {
