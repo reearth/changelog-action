@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import { groupBy, uniqBy } from "lodash";
 
 export type Commit = {
@@ -18,7 +19,10 @@ export type Option = {
   capitalizeFirstLetter?: boolean;
   titleVersionPrefix?: "add" | "remove";
   dedupSameMessages?: boolean;
+  dateFormat?: string;
 };
+
+const defaultDateFormat = "yyyy-MM-dd";
 
 export function generateChangelog(
   version: string,
@@ -51,7 +55,7 @@ export function generateChangelog(
     version = version.slice(1);
   }
 
-  const formattedDate = formatDate(date);
+  const formattedDate = format(date, options?.dateFormat || defaultDateFormat);
   const result = [
     `## ${version} - ${formattedDate}`,
     "",
@@ -214,13 +218,6 @@ export function insertChangelog(
     "\n\n" +
     changelog.slice(m.index)
   ).trim();
-}
-
-export function formatDate(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export function firstUppercase(subject: string, enabled: boolean): string {

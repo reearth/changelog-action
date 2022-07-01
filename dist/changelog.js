@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.formatDate = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
+exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.insertChangelog = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
+const date_fns_1 = require("date-fns");
 const lodash_1 = require("lodash");
+const defaultDateFormat = "yyyy-MM-dd";
 function generateChangelog(version, date, commits, options) {
     const commitGroups = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.group ?? ""), detectMerge(options?.group ?? {}));
     const groups = Object.keys(commitGroups);
@@ -19,7 +21,7 @@ function generateChangelog(version, date, commits, options) {
         version?.startsWith("v")) {
         version = version.slice(1);
     }
-    const formattedDate = formatDate(date);
+    const formattedDate = (0, date_fns_1.format)(date, options?.dateFormat || defaultDateFormat);
     const result = [
         `## ${version} - ${formattedDate}`,
         "",
@@ -128,10 +130,6 @@ function insertChangelog(changelog, inserting, version) {
         changelog.slice(m.index)).trim();
 }
 exports.insertChangelog = insertChangelog;
-function formatDate(date) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-exports.formatDate = formatDate;
 function firstUppercase(subject, enabled) {
     return enabled ? subject.charAt(0).toUpperCase() + subject.slice(1) : subject;
 }

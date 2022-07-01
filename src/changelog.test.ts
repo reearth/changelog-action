@@ -2,7 +2,6 @@ import { test, expect } from "vitest";
 
 import {
   insertChangelog,
-  formatDate,
   generateChangelog,
   generateChangelogGroup,
   generateChangelogPrefix,
@@ -313,11 +312,6 @@ test("insertChangelog", () => {
   ).toBe(
     "All notable changes to this project will be documented in this file.\n\nB"
   );
-});
-
-test("formatDate", () => {
-  expect(formatDate(new Date(2021, 5, 1, 1, 0, 1, 0))).toBe("2021-06-01");
-  expect(formatDate(new Date(2021, 11, 10))).toBe("2021-12-10");
 });
 
 test("detectMerge", () => {
