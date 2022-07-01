@@ -22,6 +22,7 @@ const configPath =
   getInput("config") ||
   process.env.CHANGELOG_CONFIG ||
   ".github/changelog.json";
+const noEmit = getInput("noEmit") || process.env.CHANGELOG_NO_EMIT;
 
 (async function () {
   const config = await loadJSON(configPath);
@@ -56,10 +57,15 @@ const configPath =
   setOutput("prevVersion", result.prevVersion);
   setOutput("oldChangelog", changelog);
   setOutput("newChangelog", newChangelog);
-  await promises.writeFile(output, newChangelog);
 
-  if (latest) {
-    await promises.writeFile(latest, result.changelogWithoutTitle);
+  if (!noEmit || noEmit !== "false") {
+    await promises.writeFile(output, newChangelog);
+    console.log(`Changelog was saved: ${output}`);
+
+    if (latest) {
+      await promises.writeFile(latest, result.changelogWithoutTitle);
+      console.log(`Changelog only for the new version was saved: ${latest}`);
+    }
   }
 })().catch((err) => {
   setFailed((err as any)?.message || err);
