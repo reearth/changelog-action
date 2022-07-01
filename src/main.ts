@@ -46,7 +46,7 @@ const noEmit = getInput("noEmit") || process.env.CHANGELOG_NO_EMIT;
   });
 
   const newChangelog = insertChangelog(
-    changelog || defaultChangelog,
+    (changelog || config?.defaultChangelog) ?? defaultChangelog,
     result.changelog,
     result.version
   );
