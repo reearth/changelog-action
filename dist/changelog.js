@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.insertChangelog = exports.fixMarkdownLinkedCode = exports.hashLinks = exports.prLinks = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
+exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.escapeRegex = exports.findVersionSection = exports.insertChangelog = exports.fixMarkdownLinkedCode = exports.hashLinks = exports.prLinks = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
 const date_fns_1 = require("date-fns");
 const lodash_1 = require("lodash");
 const mustache = __importStar(require("mustache"));
@@ -45,14 +45,7 @@ function generateChangelog(version, date, commits, options) {
         (groups.length > 1 || !!groups[0] || !!knownGroups.length);
     const formattedDate = (0, date_fns_1.format)(date, options?.dateFormat || defaultDateFormat);
     const result = [
-        render(options?.versionTemplate || defaultVersionTemplate, {
-            version,
-            versionWithPrefix: `v${version.replace(/^v/, "")}`,
-            versionWithoutPrefix: version.replace(/^v/, ""),
-            unreleased: version === "unreleased",
-            prerelease: !!(0, semver_1.prerelease)(version),
-            date: formattedDate,
-        }),
+        renderVersionHeader(options?.versionTemplate, version, formattedDate),
         "",
         ...[
             ...Object.entries(options?.group ?? []),
@@ -207,28 +200,81 @@ function getRepoUrl(repo) {
             ? `https://github.com/${repo}`
             : "";
 }
-function insertChangelog(changelog, inserting, version) {
-    changelog = changelog.trim();
-    const r = /^## v?([0-9].+?)(?: |$)/im;
-    const m = r.exec(changelog);
-    if (!m || m.index < 0)
-        return (changelog + "\n\n" + inserting).trim();
-    if (version && version.replace(/^v/, "") == m[1]) {
-        const n = r.exec(changelog.slice(m.index + m[0].length));
-        if (!n || n.index < 0) {
-            return (changelog.slice(0, m.index) + inserting).trim();
+function insertChangelog(changelog, inserting, version, template) {
+    // remove unreleased section
+    if (version !== "unreleased") {
+        const u = findVersionSection(changelog, "unreleased", template);
+        if (u) {
+            changelog =
+                changelog.slice(0, u[0]) + (u[1] === null ? "" : changelog.slice(u[1]));
         }
-        return (changelog.slice(0, m.index) +
-            inserting +
-            "\n\n" +
-            changelog.slice(m.index + m[0].length + n.index)).trim();
     }
-    return (changelog.slice(0, m.index) +
-        inserting +
+    let m = findVersionSection(changelog, version, template);
+    if (!m) {
+        const n = version
+            ? findVersionSection(changelog, undefined, template)
+            : null;
+        if (!n)
+            return (changelog.trim() + "\n\n" + inserting).trim();
+        m = n;
+    }
+    const [start, end] = m;
+    return (changelog.slice(0, start) +
+        inserting.trim() +
         "\n\n" +
-        changelog.slice(m.index)).trim();
+        (end ? changelog.slice(end) : "")).trim();
 }
 exports.insertChangelog = insertChangelog;
+function renderVersionHeader(template, version, formattedDate) {
+    return render(template || defaultVersionTemplate, {
+        version,
+        versionWithPrefix: `v${version.replace(/^v/, "")}`,
+        versionWithoutPrefix: version.replace(/^v/, ""),
+        unreleased: version === "unreleased",
+        prerelease: !!(0, semver_1.prerelease)(version),
+        date: formattedDate,
+    });
+}
+function findVersionSection(changelog, version, template) {
+    const trimmedVersion = version?.replace(/^v(\d)/, "$1");
+    const tmpl = renderVersionHeader(template, "{{___VERSION___}}", "{{___CHANGELOG_DATE___}}");
+    if (!tmpl.includes("{{___VERSION___}}"))
+        return null;
+    const re = new RegExp(escapeRegex(tmpl)
+        .replace("\\{\\{___VERSION___\\}\\}", "(.+)")
+        .replace("\\{\\{___CHANGELOG_DATE___\\}\\}", ".+"), "gm");
+    let i = null, j = null;
+    if (version === "unreleased") {
+        const reUnreleased = new RegExp(escapeRegex(renderVersionHeader(template, "unreleased", "{{___CHANGELOG_DATE___}}")).replace("\\{\\{___CHANGELOG_DATE___\\}\\}", ".+"), "m");
+        const m = reUnreleased.exec(changelog);
+        if (!m)
+            return null;
+        i = m.index;
+    }
+    for (let m; (m = re.exec(changelog));) {
+        if (!version ||
+            (i !== null && m.index !== i) ||
+            (version !== "unreleased" &&
+                trimmedVersion &&
+                m[1].replace(/^v(\d)/, "$1") === trimmedVersion)) {
+            if (i !== null) {
+                j = m.index;
+                break;
+            }
+            else {
+                i = m.index;
+                if (!version)
+                    break;
+            }
+        }
+    }
+    return i !== null ? [i, version ? j : i] : null;
+}
+exports.findVersionSection = findVersionSection;
+function escapeRegex(s) {
+    return s.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");
+}
+exports.escapeRegex = escapeRegex;
 function firstUppercase(subject, enabled) {
     return enabled ? subject.charAt(0).toUpperCase() + subject.slice(1) : subject;
 }

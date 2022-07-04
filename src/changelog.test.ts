@@ -11,6 +11,7 @@ import {
   fixMarkdownLinkedCode,
   prLinks,
   hashLinks,
+  findVersionSection,
 } from "./changelog";
 
 test("generateChangelog", () => {
@@ -323,11 +324,11 @@ test("insertChangelog", () => {
   );
   expect(
     insertChangelog(
-      "aaa\n\n## 1.0.0 - 2022/01/01\n\n-A\n\n## v0.1.0",
+      "aaa\n\n## 1.0.0 - 2022/01/01\n\n- A\n\n## v0.1.0 - 2021/01/01",
       "B",
       "v1.0.0"
     )
-  ).toBe("aaa\n\nB\n\n## v0.1.0");
+  ).toBe("aaa\n\nB\n\n## v0.1.0 - 2021/01/01");
   expect(
     insertChangelog(
       "All notable changes to this project will be documented in this file.",
@@ -337,6 +338,64 @@ test("insertChangelog", () => {
   ).toBe(
     "All notable changes to this project will be documented in this file.\n\nB"
   );
+  expect(
+    insertChangelog(
+      "All notable changes to this project will be documented in this file.\n\n## 1.0.0 - 2022/01/01\n\n- a",
+      "## Unreleased\n\n- b",
+      "unreleased"
+    )
+  ).toBe(
+    "All notable changes to this project will be documented in this file.\n\n## Unreleased\n\n- b\n\n## 1.0.0 - 2022/01/01\n\n- a"
+  );
+  expect(
+    insertChangelog(
+      "All notable changes to this project will be documented in this file.\n\n## Unreleased\n\n- b\n\n## 1.0.0 - 2022/01/01\n\n- a",
+      "## Unreleased\n\n- c",
+      "unreleased"
+    )
+  ).toBe(
+    "All notable changes to this project will be documented in this file.\n\n## Unreleased\n\n- c\n\n## 1.0.0 - 2022/01/01\n\n- a"
+  );
+  expect(
+    insertChangelog(
+      "All notable changes to this project will be documented in this file.\n\n## Unreleased\n\n- b\n\n## 1.0.0 - 2022/01/01\n\n- a",
+      "## 1.1.0\n\n- c",
+      "1.1.0"
+    )
+  ).toBe(
+    "All notable changes to this project will be documented in this file.\n\n## 1.1.0\n\n- c\n\n## 1.0.0 - 2022/01/01\n\n- a"
+  );
+});
+
+test("findVersionSection", () => {
+  expect(
+    findVersionSection("# v1\n\naaa\n\n# v2\n\nbbb", undefined, "# {{version}}")
+  ).toEqual([0, 0]);
+  expect(findVersionSection("___\n\n## 1.0.0 - 2022/01/01\n\n- a")).toEqual([
+    5, 5,
+  ]);
+  expect(
+    findVersionSection("# v1\n\naaa\n\n# v2\n\nbbb", "1", "# {{version}}")
+  ).toEqual([0, 11]);
+  expect(
+    findVersionSection("# v1\n\naaa\n\n# v2\n\nbbb", "v2", "# {{version}}")
+  ).toEqual([11, null]);
+  expect(
+    findVersionSection("___\n\n## Unreleased\n\n- a", "unreleased")
+  ).toEqual([5, null]);
+  expect(
+    findVersionSection(
+      "___\n\n## Unreleased\n\n- a\n\n## v1.0.0 - 2021/01/01",
+      "unreleased"
+    )
+  ).toEqual([5, 25]);
+  expect(
+    findVersionSection(
+      "aaa\n\n# [Unreleased]\n\naaa\n\n# [v2]\n\nbbb",
+      "unreleased",
+      "# [{{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{version}}{{/unreleased}}]"
+    )
+  ).toEqual([5, 26]);
 });
 
 test("detectMerge", () => {

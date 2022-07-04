@@ -42,7 +42,8 @@ jobs:
 
 # Fine Features
 
-- Support scopes (e.g. `chore(group): xxx`)
+- Support scopes (e.g. `chore(scope): xxx`)
+- Support "unreleased" version
 - Dedups same commit messages in changelog
 - Ignores merge commits and supports commit messages on a merged branch
 - Automatic inserting and updating changelog of the new version to the existing CHANGELOG.md

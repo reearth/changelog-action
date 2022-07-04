@@ -43,7 +43,8 @@ export type Config = Option & {
   const newChangelog = insertChangelog(
     (changelog || config?.defaultChangelog) ?? defaultChangelog,
     result.changelog,
-    result.version
+    result.version,
+    config?.versionTemplate
   );
 
   if (githubAction) {

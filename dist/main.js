@@ -25,7 +25,7 @@ const noEmit = (0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT;
             ? undefined
             : actualRepo || process.env.GITHUB_REPOSITORY,
     });
-    const newChangelog = (0, changelog_1.insertChangelog)((changelog || config?.defaultChangelog) ?? defaultChangelog, result.changelog, result.version);
+    const newChangelog = (0, changelog_1.insertChangelog)((changelog || config?.defaultChangelog) ?? defaultChangelog, result.changelog, result.version, config?.versionTemplate);
     if (githubAction) {
         (0, core_1.setOutput)("changelog", result.changelogWithoutTitle);
         (0, core_1.setOutput)("version", result.version);
