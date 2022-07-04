@@ -242,3 +242,7 @@ The following is a list of variables that can be accessed in each template.
 - `group`: whether this commit is grouped in some group
 - `groupName`: group name (extracted from the commit subject)
 - `groupTitle`: group title for display
+
+# License
+
+[MIT License](LICENSE)
