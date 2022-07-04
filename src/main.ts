@@ -1,6 +1,8 @@
 import { promises } from "fs";
 
 import { getInput, setOutput, setFailed } from "@actions/core";
+import commandLineArgs from "command-line-args";
+import commandLineUsage from "command-line-usage";
 
 import { exec, type Option } from "./action";
 import { insertChangelog } from "./changelog";
@@ -9,30 +11,78 @@ const githubAction = !!process.env.GITHUB_ACTIONS;
 const defaultChangelog =
   "# Changelog\n\nAll notable changes to this project will be documented in this file.";
 
-const version = getInput("version") || process.env.CHANGELOG_VERSION;
-const date = dateOrNow(getInput("date") || process.env.CHANGELOG_DATE);
-const repo = getInput("repo") || process.env.CHANGELOG_REPO;
-const latest = getInput("latest") || process.env.CHANGELOG_LATEST;
-const output =
-  getInput("output") || process.env.CHANGELOG_OUTPUT || "CHANGELOG.md";
-const configPath =
-  getInput("config") ||
-  process.env.CHANGELOG_CONFIG ||
-  ".github/changelog.json";
-const noEmit = getInput("noEmit") || process.env.CHANGELOG_NO_EMIT;
+type Options = {
+  version?: string;
+  date?: string;
+  repo?: string;
+  latest?: string;
+  output?: string;
+  configPath?: string;
+  noEmit?: boolean;
+};
 
-export type Config = Option & {
+type Config = Option & {
   versionPrefix?: string;
   defaultChangelog?: string;
 };
 
+const options: Options = {
+  version: getInput("version") || process.env.CHANGELOG_VERSION,
+  date: getInput("date") || process.env.CHANGELOG_DATE,
+  repo: getInput("repo") || process.env.CHANGELOG_REPO,
+  latest: getInput("latest") || process.env.CHANGELOG_LATEST,
+  output: getInput("output") || process.env.CHANGELOG_OUTPUT,
+  configPath: getInput("config") || process.env.CHANGELOG_CONFIG,
+  noEmit: argToBool(getInput("noEmit") || process.env.CHANGELOG_NO_EMIT, false),
+};
+
+const argOptions = [
+  { name: "version", type: String, alias: "v" },
+  { name: "date", type: String, alias: "d" },
+  { name: "repo", type: String, alias: "r" },
+  { name: "latest", type: String, alias: "l" },
+  { name: "output", type: String, alias: "o" },
+  { name: "configPath", type: String, alias: "c" },
+  { name: "noEmit", type: Boolean, alias: "n" },
+  { name: "help", type: Boolean, alias: "h" },
+];
+
+const args = githubAction ? {} : commandLineArgs(argOptions);
+
+if (!githubAction && args.help) {
+  console.log(
+    commandLineUsage([
+      {
+        header: "changelog",
+        content: "Generate CHANGELOG.md from git commit logs",
+      },
+      {
+        header: "Options",
+        optionList: argOptions,
+      },
+    ])
+  );
+  // eslint-disable-next-line no-process-exit
+  process.exit(0);
+}
+
 (async function () {
+  const {
+    version,
+    date,
+    repo,
+    latest,
+    output = "CHANGELOG.md",
+    configPath = ".github/changelog.json",
+    noEmit,
+  } = { ...options, ...args };
+
   const config: Config | undefined = await loadJSON(configPath);
   const changelog = await load(output);
 
   const actualRepo = repo || config?.repo;
 
-  const result = await exec(version, date, {
+  const result = await exec(version, dateOrNow(date), {
     ...(config ?? {}),
     repo:
       actualRepo === "false"
@@ -56,7 +106,7 @@ export type Config = Option & {
     setOutput("newChangelog", newChangelog);
   }
 
-  if (!noEmit || noEmit !== "false") {
+  if (!noEmit) {
     await promises.writeFile(output, newChangelog);
     console.log(`${githubAction ? "\n" : ""}Changelog was saved to ${output}`);
 
@@ -66,7 +116,9 @@ export type Config = Option & {
     }
   }
 })().catch((err) => {
-  setFailed((err as any)?.message || err);
+  if (githubAction) {
+    setFailed((err as any)?.message || err);
+  }
 });
 
 function dateOrNow(date?: string): Date {
@@ -93,4 +145,10 @@ async function load(path: string): Promise<string | undefined> {
 async function loadJSON(path: string): Promise<any> {
   const data = await load(path);
   return data ? JSON.parse(data) : undefined;
+}
+
+function argToBool(a: string | undefined, df: boolean): boolean {
+  if (a === "true") return true;
+  if (a === "false") return false;
+  return df;
 }

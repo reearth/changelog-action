@@ -49,6 +49,7 @@ jobs:
 - Automatic inserting and updating changelog of the new version to the existing CHANGELOG.md
 - Outputs changelog for only the new version, which is helpful to use as a body of a new GitHub Release
 - Optimizes links of a PR and a commit hash in each commit messages to proper hrefs
+- Available as an CLI also: `npm i -g reearth/changelog-action; changelog`
 
 # Not To Do
 

@@ -1,25 +1,56 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = require("fs");
 const core_1 = require("@actions/core");
+const command_line_args_1 = __importDefault(require("command-line-args"));
+const command_line_usage_1 = __importDefault(require("command-line-usage"));
 const action_1 = require("./action");
 const changelog_1 = require("./changelog");
 const githubAction = !!process.env.GITHUB_ACTIONS;
 const defaultChangelog = "# Changelog\n\nAll notable changes to this project will be documented in this file.";
-const version = (0, core_1.getInput)("version") || process.env.CHANGELOG_VERSION;
-const date = dateOrNow((0, core_1.getInput)("date") || process.env.CHANGELOG_DATE);
-const repo = (0, core_1.getInput)("repo") || process.env.CHANGELOG_REPO;
-const latest = (0, core_1.getInput)("latest") || process.env.CHANGELOG_LATEST;
-const output = (0, core_1.getInput)("output") || process.env.CHANGELOG_OUTPUT || "CHANGELOG.md";
-const configPath = (0, core_1.getInput)("config") ||
-    process.env.CHANGELOG_CONFIG ||
-    ".github/changelog.json";
-const noEmit = (0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT;
+const options = {
+    version: (0, core_1.getInput)("version") || process.env.CHANGELOG_VERSION,
+    date: (0, core_1.getInput)("date") || process.env.CHANGELOG_DATE,
+    repo: (0, core_1.getInput)("repo") || process.env.CHANGELOG_REPO,
+    latest: (0, core_1.getInput)("latest") || process.env.CHANGELOG_LATEST,
+    output: (0, core_1.getInput)("output") || process.env.CHANGELOG_OUTPUT,
+    configPath: (0, core_1.getInput)("config") || process.env.CHANGELOG_CONFIG,
+    noEmit: argToBool((0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT, false),
+};
+const argOptions = [
+    { name: "version", type: String, alias: "v" },
+    { name: "date", type: String, alias: "d" },
+    { name: "repo", type: String, alias: "r" },
+    { name: "latest", type: String, alias: "l" },
+    { name: "output", type: String, alias: "o" },
+    { name: "configPath", type: String, alias: "c" },
+    { name: "noEmit", type: Boolean, alias: "n" },
+    { name: "help", type: Boolean, alias: "h" },
+];
+const args = githubAction ? {} : (0, command_line_args_1.default)(argOptions);
+if (!githubAction && args.help) {
+    console.log((0, command_line_usage_1.default)([
+        {
+            header: "changelog",
+            content: "Generate CHANGELOG.md from git commit logs",
+        },
+        {
+            header: "Options",
+            optionList: argOptions,
+        },
+    ]));
+    // eslint-disable-next-line no-process-exit
+    process.exit(0);
+}
 (async function () {
+    const { version, date, repo, latest, output = "CHANGELOG.md", configPath = ".github/changelog.json", noEmit, } = { ...options, ...args };
     const config = await loadJSON(configPath);
     const changelog = await load(output);
     const actualRepo = repo || config?.repo;
-    const result = await (0, action_1.exec)(version, date, {
+    const result = await (0, action_1.exec)(version, dateOrNow(date), {
         ...(config ?? {}),
         repo: actualRepo === "false"
             ? undefined
@@ -34,7 +65,7 @@ const noEmit = (0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT;
         (0, core_1.setOutput)("oldChangelog", changelog);
         (0, core_1.setOutput)("newChangelog", newChangelog);
     }
-    if (!noEmit || noEmit !== "false") {
+    if (!noEmit) {
         await fs_1.promises.writeFile(output, newChangelog);
         console.log(`${githubAction ? "\n" : ""}Changelog was saved to ${output}`);
         if (latest) {
@@ -43,7 +74,9 @@ const noEmit = (0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT;
         }
     }
 })().catch((err) => {
-    (0, core_1.setFailed)(err?.message || err);
+    if (githubAction) {
+        (0, core_1.setFailed)(err?.message || err);
+    }
 });
 function dateOrNow(date) {
     if (!date)
@@ -69,4 +102,11 @@ async function load(path) {
 async function loadJSON(path) {
     const data = await load(path);
     return data ? JSON.parse(data) : undefined;
+}
+function argToBool(a, df) {
+    if (a === "true")
+        return true;
+    if (a === "false")
+        return false;
+    return df;
 }
