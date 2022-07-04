@@ -4,36 +4,36 @@ import {
   bumpVersion,
   getBumpFromCommits,
   parseCommitMessage,
-  trimPrefixAndGroup,
+  trimPrefixAndScope,
 } from "./core";
 
 test("parseCommitMessage", () => {
   expect(parseCommitMessage("feat(web): hogehoge")).toEqual({
     prefix: "feat",
-    group: "web",
+    scope: "web",
     breakingChange: false,
   });
   expect(parseCommitMessage("fix!: hogehoge")).toEqual({
     prefix: "fix",
-    group: undefined,
+    scope: undefined,
     breakingChange: true,
   });
   expect(parseCommitMessage("chore: hogehoge BREAKING CHANGE")).toEqual({
     prefix: "chore",
-    group: undefined,
+    scope: undefined,
     breakingChange: true,
   });
   expect(parseCommitMessage("perf(server)!: hogehoge")).toEqual({
     prefix: "perf",
-    group: "server",
+    scope: "server",
     breakingChange: true,
   });
 });
 
-test("trimPrefixAndGroup", () => {
-  expect(trimPrefixAndGroup("feat(web): a")).toBe("a");
-  expect(trimPrefixAndGroup("feat: a")).toBe("a");
-  expect(trimPrefixAndGroup("a")).toBe("a");
+test("trimPrefixAndScope", () => {
+  expect(trimPrefixAndScope("feat(web): a")).toBe("a");
+  expect(trimPrefixAndScope("feat: a")).toBe("a");
+  expect(trimPrefixAndScope("a")).toBe("a");
 });
 
 test("getBumpFromCommits", () => {

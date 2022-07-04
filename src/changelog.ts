@@ -7,7 +7,7 @@ const render = mustache.render ?? (mustache as any).default.render;
 
 export type Commit = {
   prefix?: string;
-  group?: string;
+  scope?: string;
   subject: string;
   hash?: string;
   date: Date;
@@ -16,19 +16,20 @@ export type Commit = {
 
 export type Option = {
   repo?: string;
-  prefix?: { [name: string]: { title?: string | false } | string | false };
-  group?: {
+  prefixes?: { [name: string]: { title?: string | false } | string | false };
+  scopes?: {
     [name: string]: { title?: string; repo?: string } | string | false;
   };
   capitalizeFirstLetter?: boolean;
   dedupSameMessages?: boolean;
-  separateGroups?: boolean;
+  groupByScopes?: boolean;
+  groupByPrefix?: boolean;
   linkPRs?: boolean;
   linkHashes?: boolean;
   dateFormat?: string;
   commitDateFormat?: string;
   versionTemplate?: string;
-  groupTemplate?: string;
+  scopeTemplate?: string;
   prefixTemplate?: string;
   commitTemplate?: string;
 };
@@ -36,8 +37,8 @@ export type Option = {
 const defaultDateFormat = "yyyy-MM-dd";
 const defaultVersionTemplate =
   "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}";
-const defaultGroupTemplate = "### {{title}}";
-const defaultPrefixTemplate = "###{{#group}}#{{/group}} {{title}}";
+const defaultScopeTemplate = "### {{title}}";
+const defaultPrefixTemplate = "###{{#scope}}#{{/scope}} {{title}}";
 const defaultCommitTemplate =
   "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}";
 
@@ -47,47 +48,47 @@ export function generateChangelog(
   commits: Commit[],
   options?: Option
 ): [string, string, string] {
-  const commitGroups = mergeGroups(
-    groupBy(commits, (c) => c.group ?? ""),
-    detectMerge(options?.group ?? {})
+  const commitScopes = mergeGroups(
+    groupBy(commits, (c) => c.scope ?? ""),
+    detectMerge(options?.scopes ?? {})
   );
 
-  const groups = Object.keys(commitGroups);
-  const knownGroups = Object.keys(options?.group ?? []);
-  const unknownGroups = groups
-    .filter((g) => g && !knownGroups.includes(g))
+  const scopes = Object.keys(commitScopes);
+  const knownScopes = Object.keys(options?.scopes ?? []);
+  const unknownScopes = scopes
+    .filter((g) => g && !knownScopes.includes(g))
     .sort();
-  const groupEnabled =
-    options?.separateGroups ??
-    (groups.length > 1 || !!groups[0] || !!knownGroups.length);
+  const scopeEnabled =
+    options?.groupByScopes ??
+    (scopes.length > 1 || !!scopes[0] || !!knownScopes.length);
 
   const formattedDate = format(date, options?.dateFormat || defaultDateFormat);
   const result = [
     renderVersionHeader(options?.versionTemplate, version, formattedDate),
     "",
     ...[
-      ...Object.entries(options?.group ?? []),
-      ...unknownGroups.map((g) => [g, g]),
+      ...Object.entries(options?.scopes ?? []),
+      ...unknownScopes.map((g) => [g, g]),
       ["", ""],
     ]
-      .filter(([key, g]) => g !== false && commitGroups[key]?.length)
-      .flatMap(([key, group]) => {
+      .filter(([key, g]) => g !== false && commitScopes[key]?.length)
+      .flatMap(([key, scope]) => {
         const title =
-          typeof group === "string" ? group : group ? group.title : undefined;
+          typeof scope === "string" ? scope : scope ? scope.title : undefined;
         return [
-          generateChangelogGroup({
-            commits: commitGroups[key],
-            group: groupEnabled,
-            groupName: key,
-            groupTitle: groupEnabled ? title || key || "" : false,
-            prefix: options?.prefix ?? {},
+          generateChangelogScope({
+            commits: commitScopes[key],
+            scope: scopeEnabled,
+            scopeName: key,
+            scopeTitle: scopeEnabled ? title || key || "" : false,
+            prefixes: options?.prefixes ?? {},
             repo:
-              (typeof group === "object" ? group?.repo : null) ?? options?.repo,
+              (typeof scope === "object" ? scope?.repo : null) ?? options?.repo,
             dedupSameMessages: options?.dedupSameMessages,
             capitalizeFirstLetter: options?.capitalizeFirstLetter,
             linkHashes: options?.linkHashes,
             linkPRs: options?.linkPRs,
-            groupTemplate: options?.groupTemplate,
+            scopeTemplate: options?.scopeTemplate,
             prefixTemplate: options?.prefixTemplate,
             commitTemplate: options?.commitTemplate,
           }),
@@ -100,55 +101,62 @@ export function generateChangelog(
   return [result.join("\n"), result.slice(2).join("\n"), formattedDate];
 }
 
-export function generateChangelogGroup({
+export function generateChangelogScope({
   commits,
-  group,
-  groupName,
-  groupTitle,
-  prefix,
+  scope,
+  scopeName,
+  scopeTitle,
+  prefixes,
   repo,
-  groupTemplate = defaultGroupTemplate,
+  groupByPrefix = true,
+  scopeTemplate = defaultScopeTemplate,
   ...options
 }: {
   commits: Commit[];
-  group?: boolean;
-  groupName?: string;
-  groupTitle: string | false;
-  prefix: { [name: string]: { title?: string | false } | string | false };
+  scope?: boolean;
+  scopeName?: string;
+  scopeTitle: string | false;
+  prefixes: { [name: string]: { title?: string | false } | string | false };
   repo?: string;
+  groupByPrefix?: boolean;
   dedupSameMessages?: boolean;
   capitalizeFirstLetter?: boolean;
   linkHashes?: boolean;
   linkPRs?: boolean;
-  groupTemplate?: string;
+  scopeTemplate?: string;
   prefixTemplate?: string;
   commitTemplate?: string;
   commitDateFormat?: string;
 }): string {
   if (!commits.length) return "";
-  const commitPrefixes = mergeGroups(
-    groupBy(commits, (c) => c.prefix ?? ""),
-    detectMerge(prefix)
-  );
-  const knownPrefixes = Object.keys(prefix);
+  const commitPrefixes = !groupByPrefix
+    ? {}
+    : mergeGroups(
+        groupBy(commits, (c) => c.prefix ?? ""),
+        detectMerge(prefixes)
+      );
+  const knownPrefixes = Object.keys(prefixes);
   const unknownPrefixes = Object.keys(commitPrefixes)
     .filter((p) => p && !knownPrefixes.includes(p))
     .sort();
 
   return [
-    ...(groupTitle === false
+    ...(scopeTitle === false
       ? []
       : [
-          render(groupTemplate, {
-            group,
-            name: groupName,
-            title: groupTitle,
+          render(scopeTemplate, {
+            scope,
+            name: scopeName,
+            title: scopeTitle,
             repo,
             commits,
           }),
           "",
         ]),
-    ...[...Object.entries(prefix), ...unknownPrefixes.map((p) => [p, p])]
+    ...(groupByPrefix
+      ? [...Object.entries(prefixes), ...unknownPrefixes.map((p) => [p, p])]
+      : []
+    )
       .filter(
         ([key, prefix]) =>
           prefix !== false &&
@@ -158,9 +166,9 @@ export function generateChangelogGroup({
       .flatMap(([key, prefix]) => [
         generateChangelogPrefix({
           commits: commitPrefixes[key],
-          group,
-          groupName,
-          groupTitle,
+          scope,
+          scopeName,
+          scopeTitle,
           prefix: key,
           title: (typeof prefix === "object" ? prefix.title : prefix) || key,
           repo,
@@ -169,6 +177,20 @@ export function generateChangelogGroup({
         "",
       ])
       .slice(0, -1),
+    ...(!groupByPrefix
+      ? sortCommits(commits, options.dedupSameMessages).map((commit) => [
+          generateChangelogCommit({
+            commit,
+            repo,
+            scope,
+            scopeName,
+            scopeTitle,
+            template: options.commitTemplate,
+            dateFormat: options.commitDateFormat,
+            ...options,
+          }),
+        ])
+      : []),
   ].join("\n");
 }
 
@@ -177,10 +199,10 @@ export function generateChangelogPrefix({
   prefix,
   title,
   repo,
-  group,
-  groupName,
-  groupTitle,
-  dedupSameMessages = true,
+  scope,
+  scopeName,
+  scopeTitle,
+  dedupSameMessages,
   prefixTemplate = defaultPrefixTemplate,
   commitTemplate,
   commitDateFormat,
@@ -190,9 +212,9 @@ export function generateChangelogPrefix({
   prefix?: string;
   title?: string;
   repo?: string;
-  group?: boolean;
-  groupName?: string;
-  groupTitle?: string | false;
+  scope?: boolean;
+  scopeName?: string;
+  scopeTitle?: string | false;
   dedupSameMessages?: boolean;
   capitalizeFirstLetter?: boolean;
   linkHashes?: boolean;
@@ -203,16 +225,15 @@ export function generateChangelogPrefix({
 }): string {
   if (!commits?.length) return "";
 
-  const processdCommits = (
-    dedupSameMessages ? uniqBy(commits, (c) => c.subject) : commits.concat()
-  ).sort((a, b) => b.date.getTime() - a.date.getTime());
+  const processdCommits = sortCommits(commits, dedupSameMessages);
+
   return [
     ...(title
       ? [
           render(prefixTemplate, {
-            group,
-            groupName,
-            groupTitle,
+            scope,
+            scopeName,
+            scopeTitle,
             prefix,
             title,
             repo,
@@ -221,28 +242,34 @@ export function generateChangelogPrefix({
           "",
         ]
       : []),
-    ...processdCommits.map((c) =>
+    ...processdCommits.map((commit) =>
       generateChangelogCommit({
-        commit: c,
+        commit,
         repo,
         template: commitTemplate,
+        scope,
+        scopeName,
+        scopeTitle,
         dateFormat: commitDateFormat,
-        group,
-        groupName,
-        groupTitle,
         ...options,
       })
     ),
   ].join("\n");
 }
 
+function sortCommits(commits: Commit[], dedupSameMessages = true): Commit[] {
+  return (
+    dedupSameMessages ? uniqBy(commits, (c) => c.subject) : commits.concat()
+  ).sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+
 export function generateChangelogCommit({
   commit,
   template = defaultCommitTemplate,
   repo,
-  group,
-  groupName,
-  groupTitle,
+  scope,
+  scopeName,
+  scopeTitle,
   dateFormat = defaultDateFormat,
   capitalizeFirstLetter = true,
   linkHashes = true,
@@ -251,9 +278,9 @@ export function generateChangelogCommit({
   commit: Commit;
   template?: string;
   repo?: string;
-  group?: boolean;
-  groupName?: string;
-  groupTitle?: string | false;
+  scope?: boolean;
+  scopeName?: string;
+  scopeTitle?: string | false;
   capitalizeFirstLetter?: boolean;
   dateFormat?: string;
   linkHashes?: boolean;
@@ -268,9 +295,9 @@ export function generateChangelogCommit({
     subject: firstUppercase(commit.subject, capitalizeFirstLetter),
     shortHash,
     repo,
-    group,
-    groupName,
-    groupTitle,
+    scope,
+    scopeName,
+    scopeTitle,
   });
 
   if (linkPRs) {

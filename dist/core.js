@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.bumpVersion = exports.getBumpFromCommits = exports.isValidVersion = exports.trimPrefixAndGroup = exports.parseCommitMessage = exports.getCommits = exports.getTags = void 0;
+exports.bumpVersion = exports.getBumpFromCommits = exports.isValidVersion = exports.trimPrefixAndScope = exports.parseCommitMessage = exports.getCommits = exports.getTags = void 0;
 const semver_1 = require("semver");
 const simple_git_1 = __importDefault(require("simple-git"));
 const git = (0, simple_git_1.default)();
@@ -25,7 +25,7 @@ async function getCommits(from) {
         .filter((l) => !l.message.startsWith("Revert ") &&
         !l.message.startsWith("Merge branch "))
         .map((l) => ({
-        subject: trimPrefixAndGroup(l.message),
+        subject: trimPrefixAndScope(l.message),
         hash: l.hash,
         date: new Date(l.date),
         ...parseCommitMessage(l.message),
@@ -37,15 +37,15 @@ function parseCommitMessage(subject) {
     const m = subject.match(commitMessageReg);
     return {
         prefix: m?.[1],
-        group: m?.[2],
+        scope: m?.[2],
         breakingChange: !!m?.[3] || subject.includes("BREAKING CHANGE"),
     };
 }
 exports.parseCommitMessage = parseCommitMessage;
-function trimPrefixAndGroup(subject) {
+function trimPrefixAndScope(subject) {
     return subject.replace(commitMessageReg, "");
 }
-exports.trimPrefixAndGroup = trimPrefixAndGroup;
+exports.trimPrefixAndScope = trimPrefixAndScope;
 function isValidVersion(version) {
     return version === "unreleased" || !!(0, semver_1.valid)(version);
 }

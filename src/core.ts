@@ -32,7 +32,7 @@ export async function getCommits(from?: string): Promise<Commit[]> {
         !l.message.startsWith("Merge branch ")
     )
     .map((l) => ({
-      subject: trimPrefixAndGroup(l.message),
+      subject: trimPrefixAndScope(l.message),
       hash: l.hash,
       date: new Date(l.date),
       ...parseCommitMessage(l.message),
@@ -43,18 +43,18 @@ const commitMessageReg = /^([a-z]+?)(?:\((.+?)\))?(!)?: /;
 
 export function parseCommitMessage(subject: string): {
   prefix: string | undefined;
-  group: string | undefined;
+  scope: string | undefined;
   breakingChange: boolean;
 } {
   const m = subject.match(commitMessageReg);
   return {
     prefix: m?.[1],
-    group: m?.[2],
+    scope: m?.[2],
     breakingChange: !!m?.[3] || subject.includes("BREAKING CHANGE"),
   };
 }
 
-export function trimPrefixAndGroup(subject: string): string {
+export function trimPrefixAndScope(subject: string): string {
   return subject.replace(commitMessageReg, "");
 }
 

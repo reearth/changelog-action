@@ -3,7 +3,7 @@ import { test, expect } from "vitest";
 import {
   insertChangelog,
   generateChangelog,
-  generateChangelogGroup,
+  generateChangelogScope,
   generateChangelogPrefix,
   generateChangelogCommit,
   detectMerge,
@@ -23,19 +23,19 @@ test("generateChangelog", () => {
         {
           subject: "hoge",
           prefix: "feat",
-          group: "web",
+          scope: "web",
           date: new Date(2021, 1, 1),
         },
         {
           subject: "hoge2",
           prefix: "feat",
-          group: "web2",
+          scope: "web2",
           date: new Date(2021, 1, 1),
         },
         {
           subject: "hoge3",
           prefix: "feat",
-          group: "web3",
+          scope: "web3",
           date: new Date(2021, 1, 1),
         },
         { subject: "foobar", prefix: "fix", date: new Date() },
@@ -43,18 +43,18 @@ test("generateChangelog", () => {
           subject: "a",
           prefix: "chore",
           hash: "xxxxxx",
-          group: "server",
+          scope: "server",
           date: new Date(2021, 1, 1),
         },
         { subject: "c", prefix: "ci", date: new Date(2021, 1, 1) },
       ],
       {
-        prefix: {
+        prefixes: {
           feat: "Feature",
           fix: "Fix",
           ci: false,
         },
-        group: {
+        scopes: {
           server: { title: "Server", repo: "foo/bar" },
           web2: "web2",
           web3: { title: "web2" },
@@ -102,13 +102,13 @@ test("generateChangelog", () => {
         { subject: "c", prefix: "ci", date: new Date(2021, 1, 1) },
       ],
       {
-        prefix: {
+        prefixes: {
           feat: "Feature",
           fix: { title: "Fix" },
           fix2: "Fix",
           ci: false,
         },
-        group: {
+        scopes: {
           server: "Server",
         },
         versionTemplate: "## {{versionWithoutPrefix}} - {{date}}",
@@ -144,7 +144,7 @@ test("generateChangelog", () => {
         { subject: "c", prefix: "ci", date: new Date(2021, 1, 1) },
       ],
       {
-        prefix: {
+        prefixes: {
           feat: "Feature",
           fix: "Fix",
           ci: false,
@@ -175,9 +175,9 @@ test("generateChangelog", () => {
   ]);
 });
 
-test("generateChangelogGroup", () => {
+test("generateChangelogScope", () => {
   expect(
-    generateChangelogGroup({
+    generateChangelogScope({
       commits: [
         { subject: "hoge", prefix: "feat", date: new Date(2000, 1, 1) },
         { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
@@ -186,17 +186,17 @@ test("generateChangelogGroup", () => {
         { subject: "b", date: new Date(2000, 1, 1) },
         { subject: "c", prefix: "ci", date: new Date(2000, 1, 1) },
       ],
-      group: true,
-      groupName: "group",
-      groupTitle: "Group",
-      prefix: {
+      scope: true,
+      scopeName: "scope",
+      scopeTitle: "Scope",
+      prefixes: {
         feat: "Feature",
         fix: "Fix",
         ci: false,
       },
     }).split("\n")
   ).toEqual([
-    "### Group",
+    "### Scope",
     "",
     "#### Feature",
     "",
@@ -211,18 +211,31 @@ test("generateChangelogGroup", () => {
     "- A",
   ]);
   expect(
-    generateChangelogGroup({
+    generateChangelogScope({
       commits: [
         { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
         { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
       ],
-      group: true,
-      groupName: "group",
-      groupTitle: "Group",
-      prefix: {},
+      scope: true,
+      scopeName: "scope",
+      scopeTitle: "Scope",
+      prefixes: {},
       dedupSameMessages: false,
     }).split("\n")
-  ).toEqual(["### Group", "", "#### fix", "", "- Foobar", "- Foobar"]);
+  ).toEqual(["### Scope", "", "#### fix", "", "- Foobar", "- Foobar"]);
+  expect(
+    generateChangelogScope({
+      commits: [
+        { subject: "hoge", prefix: "fix", date: new Date(2000, 1, 1) },
+        { subject: "foobar", prefix: "fix", date: new Date(2000, 2, 1) },
+      ],
+      groupByPrefix: false,
+      scope: true,
+      scopeName: "scope",
+      scopeTitle: "Scope",
+      prefixes: {},
+    }).split("\n")
+  ).toEqual(["### Scope", "", "- Foobar", "- Hoge"]);
 });
 
 test("generateChangelogPrefix", () => {

@@ -2,9 +2,9 @@
 
 A GitHub Action to generate CHANGELOG.md from Git commit histories
 
-- Automatic version bumping
-- Generate changelog from commit messages according to Conventional Commits
-- Easily customizable configuration
+- 🔖 Automatic version bumping
+- ✨ Generate changelog from commit messages according to Conventional Commits
+- 🔧 Easily customizable configuration
 
 **NOTE**: Do not forget to checkout the repository with `fetch-depth: 0`!
 
@@ -125,14 +125,14 @@ Put `.github/changelog.json`.
 ```json
 {
   "repo": "reearth/changelog-action",
-  "prefix": {
+  "prefixes": {
     "feat": {
       "title": "Features"
     },
     "fix": "Bug fixes",
     "revert": false
   },
-  "group": {
+  "scopes": {
     "hoge": {
       "title": "Hoge",
       "repo": "reearth/changelog-action-2"
@@ -140,7 +140,8 @@ Put `.github/changelog.json`.
   },
   "disableFirstLetterCapitalization": false,
   "dedupSameMessages": true,
-  "separateGroups": null,
+  "groupByScopes": null,
+  "groupByPrefixes": null,
   "versionPrefix": null,
   "minorPrefixes": ["feat"],
   "initialVersion": "v0.1.0",
@@ -150,8 +151,8 @@ Put `.github/changelog.json`.
   "commitDateFormat": "yyyy-MM-dd",
   "defaultChangelog": "# Changelog\n\nAll notable changes to this project will be documented in this file.",
   "versionTemplate": "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}",
-  "groupTemplate": "### {{title}}",
-  "prefixTemplate": "###{{#group}}#{{/group}} {{title}}",
+  "scopeTemplate": "### {{title}}",
+  "prefixTemplate": "###{{#scope}}#{{/scope}} {{title}}",
   "commitTemplate": "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}"
 }
 ```
@@ -159,16 +160,18 @@ Put `.github/changelog.json`.
 ```typescript
 type Option = {
   repo?: string;
-  prefix?: { [name: string]: { title?: string | false } | string | false };
-  group?: {
+  prefixes?: { [name: string]: { title?: string | false } | string | false };
+  scopes?: {
     [name: string]: { title?: string; repo?: string } | string | false;
   };
   // Whether to capitalize the first letter of each commit message
   capitalizeFirstLetter?: boolean;
   // Deduplicate commits for the same message from changelog. Default is true.
   dedupSameMessages?: boolean;
-  // If true, separates commit messages for each group. Default: null (automatically decided)
-  separateGroups?: boolean;
+  // If true, groups commit messages by scopes. Default: null (automatically decided)
+  groupByScopes?: boolean;
+  // If true, groups commit messages by prefixes. Default: true
+  groupByPrefixes?: boolean;
   // Always add or always remove the prefix ("v") from the tag name entered. Default: as is
   versionPrefix?: "add" | "remove";
   // If the next version is not specified, the action automatically detects a new version. If the prefix is one of them, it is treated as a minor update. Default: ["feat"]
@@ -188,8 +191,8 @@ type Option = {
   defaultChangelog?: string;
   // Mustache template for a version title
   versionTemplate?: string;
-  // Mustache template for a group title
-  groupTemplate?: string;
+  // Mustache template for a scope title
+  scopeTemplate?: string;
   // Mustache template for a prefix title
   prefixTemplate?: string;
   // Mustache template for a commit
@@ -212,13 +215,13 @@ The following is a list of variables that can be accessed in each template.
 - `unreleased`: whether the version is "unreleased"
 - `prerelease`: whether the version is prerelease (e.g. true when version is "0.1.0-beta.1")
 
-### groupTemplate
+### scopeTemplate
 
-- `group`: whether the group exists (false when there are no group in commits)
-- `name`: group name (extracted from the commit subject)
-- `title`: group title for display
+- `scope`: whether the scope exists (false when there are no scope in commits)
+- `name`: scope name (extracted from the commit subject)
+- `title`: scope title for display
 - `repo`: repository owner and name (e.g. "reearth/changelog-action")
-- `commits`: an array of commit objects of the group
+- `commits`: an array of commit objects of the scope
 
 ### prefixTempalte
 
@@ -226,9 +229,9 @@ The following is a list of variables that can be accessed in each template.
 - `title`: prefix title
 - `repo`: repository owner and name (e.g. "reearth/changelog-action")
 - `commits`: an array of commit objects of the prefix used by commitTemplate
-- `group`: whether this prefix is grouped in some group
-- `groupName`: group name (extracted from the commit subject)
-- `groupTitle`: group title for display
+- `scope`: whether this prefix is grouped in some scope
+- `scopeName`: scope name (extracted from the commit subject)
+- `scopeTitle`: scope title for display
 
 ### commitTemplate
 
@@ -239,9 +242,9 @@ The following is a list of variables that can be accessed in each template.
 - `hash`: Long commit hash
 - `shortHash`: Short commit hash
 - `repo`: repository owner and name (e.g. "reearth/changelog-action")
-- `group`: whether this commit is grouped in some group
-- `groupName`: group name (extracted from the commit subject)
-- `groupTitle`: group title for display
+- `scope`: whether this commit is grouped in some scope
+- `scopeName`: scope name (extracted from the commit subject)
+- `scopeTitle`: scope title for display
 
 # License
 

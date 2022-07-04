@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.escapeRegex = exports.findVersionSection = exports.insertChangelog = exports.fixMarkdownLinkedCode = exports.hashLinks = exports.prLinks = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogGroup = exports.generateChangelog = void 0;
+exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.escapeRegex = exports.findVersionSection = exports.insertChangelog = exports.fixMarkdownLinkedCode = exports.hashLinks = exports.prLinks = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogScope = exports.generateChangelog = void 0;
 const date_fns_1 = require("date-fns");
 const lodash_1 = require("lodash");
 const mustache = __importStar(require("mustache"));
@@ -31,43 +31,43 @@ const semver_1 = require("semver");
 const render = mustache.render ?? mustache.default.render;
 const defaultDateFormat = "yyyy-MM-dd";
 const defaultVersionTemplate = "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}";
-const defaultGroupTemplate = "### {{title}}";
-const defaultPrefixTemplate = "###{{#group}}#{{/group}} {{title}}";
+const defaultScopeTemplate = "### {{title}}";
+const defaultPrefixTemplate = "###{{#scope}}#{{/scope}} {{title}}";
 const defaultCommitTemplate = "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}";
 function generateChangelog(version, date, commits, options) {
-    const commitGroups = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.group ?? ""), detectMerge(options?.group ?? {}));
-    const groups = Object.keys(commitGroups);
-    const knownGroups = Object.keys(options?.group ?? []);
-    const unknownGroups = groups
-        .filter((g) => g && !knownGroups.includes(g))
+    const commitScopes = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.scope ?? ""), detectMerge(options?.scopes ?? {}));
+    const scopes = Object.keys(commitScopes);
+    const knownScopes = Object.keys(options?.scopes ?? []);
+    const unknownScopes = scopes
+        .filter((g) => g && !knownScopes.includes(g))
         .sort();
-    const groupEnabled = options?.separateGroups ??
-        (groups.length > 1 || !!groups[0] || !!knownGroups.length);
+    const scopeEnabled = options?.groupByScopes ??
+        (scopes.length > 1 || !!scopes[0] || !!knownScopes.length);
     const formattedDate = (0, date_fns_1.format)(date, options?.dateFormat || defaultDateFormat);
     const result = [
         renderVersionHeader(options?.versionTemplate, version, formattedDate),
         "",
         ...[
-            ...Object.entries(options?.group ?? []),
-            ...unknownGroups.map((g) => [g, g]),
+            ...Object.entries(options?.scopes ?? []),
+            ...unknownScopes.map((g) => [g, g]),
             ["", ""],
         ]
-            .filter(([key, g]) => g !== false && commitGroups[key]?.length)
-            .flatMap(([key, group]) => {
-            const title = typeof group === "string" ? group : group ? group.title : undefined;
+            .filter(([key, g]) => g !== false && commitScopes[key]?.length)
+            .flatMap(([key, scope]) => {
+            const title = typeof scope === "string" ? scope : scope ? scope.title : undefined;
             return [
-                generateChangelogGroup({
-                    commits: commitGroups[key],
-                    group: groupEnabled,
-                    groupName: key,
-                    groupTitle: groupEnabled ? title || key || "" : false,
-                    prefix: options?.prefix ?? {},
-                    repo: (typeof group === "object" ? group?.repo : null) ?? options?.repo,
+                generateChangelogScope({
+                    commits: commitScopes[key],
+                    scope: scopeEnabled,
+                    scopeName: key,
+                    scopeTitle: scopeEnabled ? title || key || "" : false,
+                    prefixes: options?.prefixes ?? {},
+                    repo: (typeof scope === "object" ? scope?.repo : null) ?? options?.repo,
                     dedupSameMessages: options?.dedupSameMessages,
                     capitalizeFirstLetter: options?.capitalizeFirstLetter,
                     linkHashes: options?.linkHashes,
                     linkPRs: options?.linkPRs,
-                    groupTemplate: options?.groupTemplate,
+                    scopeTemplate: options?.scopeTemplate,
                     prefixTemplate: options?.prefixTemplate,
                     commitTemplate: options?.commitTemplate,
                 }),
@@ -79,37 +79,41 @@ function generateChangelog(version, date, commits, options) {
     return [result.join("\n"), result.slice(2).join("\n"), formattedDate];
 }
 exports.generateChangelog = generateChangelog;
-function generateChangelogGroup({ commits, group, groupName, groupTitle, prefix, repo, groupTemplate = defaultGroupTemplate, ...options }) {
+function generateChangelogScope({ commits, scope, scopeName, scopeTitle, prefixes, repo, groupByPrefix = true, scopeTemplate = defaultScopeTemplate, ...options }) {
     if (!commits.length)
         return "";
-    const commitPrefixes = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefix));
-    const knownPrefixes = Object.keys(prefix);
+    const commitPrefixes = !groupByPrefix
+        ? {}
+        : mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefixes));
+    const knownPrefixes = Object.keys(prefixes);
     const unknownPrefixes = Object.keys(commitPrefixes)
         .filter((p) => p && !knownPrefixes.includes(p))
         .sort();
     return [
-        ...(groupTitle === false
+        ...(scopeTitle === false
             ? []
             : [
-                render(groupTemplate, {
-                    group,
-                    name: groupName,
-                    title: groupTitle,
+                render(scopeTemplate, {
+                    scope,
+                    name: scopeName,
+                    title: scopeTitle,
                     repo,
                     commits,
                 }),
                 "",
             ]),
-        ...[...Object.entries(prefix), ...unknownPrefixes.map((p) => [p, p])]
+        ...(groupByPrefix
+            ? [...Object.entries(prefixes), ...unknownPrefixes.map((p) => [p, p])]
+            : [])
             .filter(([key, prefix]) => prefix !== false &&
             (typeof prefix !== "object" || prefix?.title !== false) &&
             commitPrefixes[key]?.length)
             .flatMap(([key, prefix]) => [
             generateChangelogPrefix({
                 commits: commitPrefixes[key],
-                group,
-                groupName,
-                groupTitle,
+                scope,
+                scopeName,
+                scopeTitle,
                 prefix: key,
                 title: (typeof prefix === "object" ? prefix.title : prefix) || key,
                 repo,
@@ -118,20 +122,34 @@ function generateChangelogGroup({ commits, group, groupName, groupTitle, prefix,
             "",
         ])
             .slice(0, -1),
+        ...(!groupByPrefix
+            ? sortCommits(commits, options.dedupSameMessages).map((commit) => [
+                generateChangelogCommit({
+                    commit,
+                    repo,
+                    scope,
+                    scopeName,
+                    scopeTitle,
+                    template: options.commitTemplate,
+                    dateFormat: options.commitDateFormat,
+                    ...options,
+                }),
+            ])
+            : []),
     ].join("\n");
 }
-exports.generateChangelogGroup = generateChangelogGroup;
-function generateChangelogPrefix({ commits, prefix, title, repo, group, groupName, groupTitle, dedupSameMessages = true, prefixTemplate = defaultPrefixTemplate, commitTemplate, commitDateFormat, ...options }) {
+exports.generateChangelogScope = generateChangelogScope;
+function generateChangelogPrefix({ commits, prefix, title, repo, scope, scopeName, scopeTitle, dedupSameMessages, prefixTemplate = defaultPrefixTemplate, commitTemplate, commitDateFormat, ...options }) {
     if (!commits?.length)
         return "";
-    const processdCommits = (dedupSameMessages ? (0, lodash_1.uniqBy)(commits, (c) => c.subject) : commits.concat()).sort((a, b) => b.date.getTime() - a.date.getTime());
+    const processdCommits = sortCommits(commits, dedupSameMessages);
     return [
         ...(title
             ? [
                 render(prefixTemplate, {
-                    group,
-                    groupName,
-                    groupTitle,
+                    scope,
+                    scopeName,
+                    scopeTitle,
                     prefix,
                     title,
                     repo,
@@ -140,20 +158,23 @@ function generateChangelogPrefix({ commits, prefix, title, repo, group, groupNam
                 "",
             ]
             : []),
-        ...processdCommits.map((c) => generateChangelogCommit({
-            commit: c,
+        ...processdCommits.map((commit) => generateChangelogCommit({
+            commit,
             repo,
             template: commitTemplate,
+            scope,
+            scopeName,
+            scopeTitle,
             dateFormat: commitDateFormat,
-            group,
-            groupName,
-            groupTitle,
             ...options,
         })),
     ].join("\n");
 }
 exports.generateChangelogPrefix = generateChangelogPrefix;
-function generateChangelogCommit({ commit, template = defaultCommitTemplate, repo, group, groupName, groupTitle, dateFormat = defaultDateFormat, capitalizeFirstLetter = true, linkHashes = true, linkPRs = true, }) {
+function sortCommits(commits, dedupSameMessages = true) {
+    return (dedupSameMessages ? (0, lodash_1.uniqBy)(commits, (c) => c.subject) : commits.concat()).sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+function generateChangelogCommit({ commit, template = defaultCommitTemplate, repo, scope, scopeName, scopeTitle, dateFormat = defaultDateFormat, capitalizeFirstLetter = true, linkHashes = true, linkPRs = true, }) {
     repo = getRepoUrl(repo);
     const shortHash = commit.hash?.slice(0, 6);
     let message = render(template, {
@@ -162,9 +183,9 @@ function generateChangelogCommit({ commit, template = defaultCommitTemplate, rep
         subject: firstUppercase(commit.subject, capitalizeFirstLetter),
         shortHash,
         repo,
-        group,
-        groupName,
-        groupTitle,
+        scope,
+        scopeName,
+        scopeTitle,
     });
     if (linkPRs) {
         message = prLinks(message, repo);

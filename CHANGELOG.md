@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### chore
 
+- Add license file [`7eaae3`](https://github.com/reearth/changelog-action/commit/7eaae3)
 - Only set outputs in github actions [`73bc36`](https://github.com/reearth/changelog-action/commit/73bc36)
 - Add date-fns and mustache [`9cd338`](https://github.com/reearth/changelog-action/commit/9cd338)
 - Add husky and lint-staged [`3ef9a9`](https://github.com/reearth/changelog-action/commit/3ef9a9)
@@ -13,11 +14,13 @@ All notable changes to this project will be documented in this file.
 
 ### docs
 
+- Update changelog [`a98196`](https://github.com/reearth/changelog-action/commit/a98196)
 - Add CHANGELOG [`b2b7ad`](https://github.com/reearth/changelog-action/commit/b2b7ad)
 - Add README [`010fb9`](https://github.com/reearth/changelog-action/commit/010fb9)
 
 ### feat
 
+- Support cli [`6911b8`](https://github.com/reearth/changelog-action/commit/6911b8)
 - Remove unreleased version from changelog when version is not unreleased [`27b7da`](https://github.com/reearth/changelog-action/commit/27b7da)
 - Support unreleased version [`25f79e`](https://github.com/reearth/changelog-action/commit/25f79e)
 - SeparateGroups option, commitDateFormat option [`522b18`](https://github.com/reearth/changelog-action/commit/522b18)
