@@ -13,10 +13,13 @@ All notable changes to this project will be documented in this file.
 
 ### docs
 
+- Add CHANGELOG [`b2b7ad`](https://github.com/reearth/changelog-action/commit/b2b7ad)
 - Add README [`010fb9`](https://github.com/reearth/changelog-action/commit/010fb9)
 
 ### feat
 
+- Remove unreleased version from changelog when version is not unreleased [`27b7da`](https://github.com/reearth/changelog-action/commit/27b7da)
+- Support unreleased version [`25f79e`](https://github.com/reearth/changelog-action/commit/25f79e)
 - SeparateGroups option, commitDateFormat option [`522b18`](https://github.com/reearth/changelog-action/commit/522b18)
 - Support templates [`a59603`](https://github.com/reearth/changelog-action/commit/a59603)
 - DefaultChangelog option [`fc3f67`](https://github.com/reearth/changelog-action/commit/fc3f67)
