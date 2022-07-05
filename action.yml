@@ -3,7 +3,7 @@ description: Generate CHANGELOG automatically
 author: rot1024
 runs:
   using: node16
-  main: dist/main.js
+  main: dist/index.js
 branding:
  icon: file-text
  color: purple

@@ -1,7 +1,7 @@
 {
   "name": "changelog-action",
   "version": "0.0.0",
-  "main": "dist/main.js",
+  "main": "dist/index.js",
   "description": "GitHub Action to generates CHANGELOG.md from git commit logs",
   "repository": "https://github.com/reearth/changelog-action",
   "author": "rot1024 <aayhrot@gmail.com>",
@@ -13,7 +13,7 @@
   "scripts": {
     "start": "node ./dist/main.js",
     "test": "vitest",
-    "build": "tsc",
+    "build": "tsc && ncc build dist/main.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
@@ -41,6 +41,7 @@
     "@types/semver": "^7.3.9",
     "@typescript-eslint/eslint-plugin": "^5.27.1",
     "@typescript-eslint/parser": "^5.27.1",
+    "@vercel/ncc": "^0.34.0",
     "eslint": "^8.17.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
