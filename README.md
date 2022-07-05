@@ -210,7 +210,8 @@ The following is a list of variables that can be accessed in each template.
 
 ### commitTemplate
 
-- `subject`: commit subject (body is not included)
+- `subject`: commit subject
+- `body`: commit body
 - `prefix`: commit prefix (etc. "feat", "fix", "chore")
 - `date`: commit date formatted by `commitDateFormat` option
 - `breakingChange`: Whether the commit is marked as a breaking change
@@ -220,6 +221,7 @@ The following is a list of variables that can be accessed in each template.
 - `scope`: whether this commit is grouped in some scope
 - `scopeName`: scope name (extracted from the commit subject)
 - `scopeTitle`: scope title for display
+- `pr`: pr number string if included
 
 # License
 

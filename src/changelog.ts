@@ -10,8 +10,10 @@ export type Commit = {
   scope?: string;
   subject: string;
   hash?: string;
+  body?: string;
   date: Date;
   breakingChange?: boolean;
+  pr?: string;
 };
 
 export type Option = {

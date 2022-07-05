@@ -32,30 +32,32 @@ export async function getCommits(from?: string): Promise<Commit[]> {
         !l.message.startsWith("Merge branch ")
     )
     .map((l) => ({
-      subject: trimPrefixAndScope(l.message),
+      body: l.body,
       hash: l.hash,
       date: new Date(l.date),
       ...parseCommitMessage(l.message),
     }));
 }
 
-const commitMessageReg = /^([a-z]+?)(?:\((.+?)\))?(!)?: /;
+const commitMessageReg = /^([a-z]+?)(?:\((.+?)\))?(!)?:(.*)$/;
+const prReg = /#(\d+)(?:\D|$)/;
 
 export function parseCommitMessage(subject: string): {
   prefix: string | undefined;
   scope: string | undefined;
+  pr: string | undefined;
   breakingChange: boolean;
+  subject: string;
 } {
   const m = subject.match(commitMessageReg);
+  const s = m?.[4].trim() || subject;
   return {
     prefix: m?.[1],
     scope: m?.[2],
-    breakingChange: !!m?.[3] || subject.includes("BREAKING CHANGE"),
+    breakingChange: !!m?.[3] || s.includes("BREAKING CHANGE"),
+    subject: s,
+    pr: s.match(prReg)?.[1],
   };
-}
-
-export function trimPrefixAndScope(subject: string): string {
-  return subject.replace(commitMessageReg, "");
 }
 
 export function isValidVersion(version: string): boolean {

@@ -1,39 +1,43 @@
 import { test, expect } from "vitest";
 
-import {
-  bumpVersion,
-  getBumpFromCommits,
-  parseCommitMessage,
-  trimPrefixAndScope,
-} from "./core";
+import { bumpVersion, getBumpFromCommits, parseCommitMessage } from "./core";
 
 test("parseCommitMessage", () => {
+  expect(parseCommitMessage("hogehoge")).toEqual({
+    subject: "hogehoge",
+    breakingChange: false,
+  });
   expect(parseCommitMessage("feat(web): hogehoge")).toEqual({
+    subject: "hogehoge",
     prefix: "feat",
     scope: "web",
     breakingChange: false,
   });
   expect(parseCommitMessage("fix!: hogehoge")).toEqual({
+    subject: "hogehoge",
     prefix: "fix",
     scope: undefined,
     breakingChange: true,
   });
   expect(parseCommitMessage("chore: hogehoge BREAKING CHANGE")).toEqual({
+    subject: "hogehoge BREAKING CHANGE",
     prefix: "chore",
     scope: undefined,
     breakingChange: true,
   });
   expect(parseCommitMessage("perf(server)!: hogehoge")).toEqual({
+    subject: "hogehoge",
     prefix: "perf",
     scope: "server",
     breakingChange: true,
   });
-});
-
-test("trimPrefixAndScope", () => {
-  expect(trimPrefixAndScope("feat(web): a")).toBe("a");
-  expect(trimPrefixAndScope("feat: a")).toBe("a");
-  expect(trimPrefixAndScope("a")).toBe("a");
+  expect(parseCommitMessage("perf(server): hogehoge (#123)")).toEqual({
+    subject: "hogehoge (#123)",
+    prefix: "perf",
+    scope: "server",
+    pr: "123",
+    breakingChange: false,
+  });
 });
 
 test("getBumpFromCommits", () => {

@@ -398,7 +398,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.bumpVersion = exports.getBumpFromCommits = exports.isValidVersion = exports.trimPrefixAndScope = exports.parseCommitMessage = exports.getCommits = exports.getTags = void 0;
+exports.bumpVersion = exports.getBumpFromCommits = exports.isValidVersion = exports.parseCommitMessage = exports.getCommits = exports.getTags = void 0;
 const semver_1 = __nccwpck_require__(1383);
 const simple_git_1 = __importDefault(__nccwpck_require__(9103));
 const git = (0, simple_git_1.default)();
@@ -420,27 +420,27 @@ async function getCommits(from) {
         .filter((l) => !l.message.startsWith("Revert ") &&
         !l.message.startsWith("Merge branch "))
         .map((l) => ({
-        subject: trimPrefixAndScope(l.message),
+        body: l.body,
         hash: l.hash,
         date: new Date(l.date),
         ...parseCommitMessage(l.message),
     }));
 }
 exports.getCommits = getCommits;
-const commitMessageReg = /^([a-z]+?)(?:\((.+?)\))?(!)?: /;
+const commitMessageReg = /^([a-z]+?)(?:\((.+?)\))?(!)?:(.*)$/;
+const prReg = /#(\d+)(?:\D|$)/;
 function parseCommitMessage(subject) {
     const m = subject.match(commitMessageReg);
+    const s = m?.[4].trim() || subject;
     return {
         prefix: m?.[1],
         scope: m?.[2],
-        breakingChange: !!m?.[3] || subject.includes("BREAKING CHANGE"),
+        breakingChange: !!m?.[3] || s.includes("BREAKING CHANGE"),
+        subject: s,
+        pr: s.match(prReg)?.[1],
     };
 }
 exports.parseCommitMessage = parseCommitMessage;
-function trimPrefixAndScope(subject) {
-    return subject.replace(commitMessageReg, "");
-}
-exports.trimPrefixAndScope = trimPrefixAndScope;
 function isValidVersion(version) {
     return version === "unreleased" || !!(0, semver_1.valid)(version);
 }
