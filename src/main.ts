@@ -3,6 +3,7 @@ import { promises } from "fs";
 import { getInput, setOutput, setFailed } from "@actions/core";
 import commandLineArgs from "command-line-args";
 import commandLineUsage from "command-line-usage";
+import * as yaml from "js-yaml";
 
 import { exec, type Option } from "./action";
 import { insertChangelog } from "./changelog";
@@ -17,7 +18,7 @@ type Options = {
   repo?: string;
   latest?: string;
   output?: string;
-  configPath?: string;
+  configPath?: string | string[];
   noEmit?: boolean;
 };
 
@@ -73,11 +74,17 @@ if (!githubAction && args.help) {
     repo,
     latest,
     output = "CHANGELOG.md",
-    configPath = ".github/changelog.json",
+    configPath = [
+      ".github/changelog.yml",
+      ".github/changelog.json",
+      ".github/changelog.yaml",
+    ],
     noEmit,
   } = { ...options, ...args };
 
-  const config: Config | undefined = await loadJSON(configPath);
+  const config: Config | undefined = await loadJSON(
+    ...(Array.isArray(configPath) ? configPath : [configPath])
+  );
   const changelog = await load(output);
 
   const actualRepo = repo || config?.repo;
@@ -142,9 +149,14 @@ async function load(path: string): Promise<string | undefined> {
   return data;
 }
 
-async function loadJSON(path: string): Promise<any> {
-  const data = await load(path);
-  return data ? JSON.parse(data) : undefined;
+async function loadJSON(...paths: string[]): Promise<any> {
+  for (const path of paths) {
+    const data = await load(path);
+    if (data) {
+      return yaml.load(data);
+    }
+  }
+  return undefined;
 }
 
 function argToBool(a: string | undefined, df: boolean): boolean {

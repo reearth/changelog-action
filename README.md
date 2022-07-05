@@ -6,8 +6,6 @@ A GitHub Action to generate CHANGELOG.md from Git commit histories
 - ✨ Generate changelog from commit messages according to Conventional Commits
 - 🔧 Easily customizable configuration
 
-**NOTE**: Do not forget to checkout the repository with `fetch-depth: 0`!
-
 ```yml
 name: Release
 on:
@@ -43,7 +41,7 @@ jobs:
 # Fine Features
 
 - Support scopes (e.g. `chore(scope): xxx`)
-- Support "unreleased" version
+- Support unreleased version
 - Dedups same commit messages in changelog
 - Ignores merge commits and supports commit messages on a merged branch
 - Automatic inserting and updating changelog of the new version to the existing CHANGELOG.md
@@ -75,8 +73,8 @@ with:
   output: CHANGELOG.md
   # If true, any files will not be emitted. The result is only available from the outputs.
   noEmit: false
-  # Config JSON file path
-  config: .github/changelog.json
+  # Config file path. Default: .github/changelog.yml, .github/changelog.json, .github/changelog.yaml
+  config: .github/changelog.yml
 ```
 
 # Outputs
@@ -120,41 +118,35 @@ The whole contents of the previous `CHANGELOG.md`
 
 # Configurations
 
-Put `.github/changelog.json`.
+`.github/changelog.yml`
 
-```json
-{
-  "repo": "reearth/changelog-action",
-  "prefixes": {
-    "feat": {
-      "title": "Features"
-    },
-    "fix": "Bug fixes",
-    "revert": false
-  },
-  "scopes": {
-    "hoge": {
-      "title": "Hoge",
-      "repo": "reearth/changelog-action-2"
-    }
-  },
-  "disableFirstLetterCapitalization": false,
-  "dedupSameMessages": true,
-  "groupByScopes": null,
-  "groupByPrefixes": null,
-  "versionPrefix": null,
-  "minorPrefixes": ["feat"],
-  "initialVersion": "v0.1.0",
-  "linkPRs": true,
-  "linkHashes": true,
-  "dateFormat": "yyyy-MM-dd",
-  "commitDateFormat": "yyyy-MM-dd",
-  "defaultChangelog": "# Changelog\n\nAll notable changes to this project will be documented in this file.",
-  "versionTemplate": "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}",
-  "scopeTemplate": "### {{title}}",
-  "prefixTemplate": "###{{#scope}}#{{/scope}} {{title}}",
-  "commitTemplate": "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}"
-}
+```yml
+repo: reearth/changelog-action
+prefixes:
+  feat:
+    title: Features
+  fix: Bug fixes
+  revert: false
+scopes:
+  hoge:
+    title: Hoge
+    repo: reearth/changelog-action-2
+disableFirstLetterCapitalization: false
+dedupSameMessages: true
+groupByScopes: null
+groupByPrefixes: null
+versionPrefix: null
+minorPrefixes: [feat]
+initialVersion: v0.1.0
+linkPRs: true
+linkHashes: true
+dateFormat: yyyy-MM-dd
+commitDateFormat: yyyy-MM-dd
+defaultChangelog: "# Changelog\n\nAll notable changes to this project will be documented in this file."
+versionTemplate: "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}"
+scopeTemplate: "### {{title}}"
+prefixTemplate: "###{{#scope}}#{{/scope}} {{title}}"
+commitTemplate: "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}"
 ```
 
 ```typescript

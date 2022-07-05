@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -7,6 +30,7 @@ const fs_1 = require("fs");
 const core_1 = require("@actions/core");
 const command_line_args_1 = __importDefault(require("command-line-args"));
 const command_line_usage_1 = __importDefault(require("command-line-usage"));
+const yaml = __importStar(require("js-yaml"));
 const action_1 = require("./action");
 const changelog_1 = require("./changelog");
 const githubAction = !!process.env.GITHUB_ACTIONS;
@@ -46,8 +70,12 @@ if (!githubAction && args.help) {
     process.exit(0);
 }
 (async function () {
-    const { version, date, repo, latest, output = "CHANGELOG.md", configPath = ".github/changelog.json", noEmit, } = { ...options, ...args };
-    const config = await loadJSON(configPath);
+    const { version, date, repo, latest, output = "CHANGELOG.md", configPath = [
+        ".github/changelog.yml",
+        ".github/changelog.json",
+        ".github/changelog.yaml",
+    ], noEmit, } = { ...options, ...args };
+    const config = await loadJSON(...(Array.isArray(configPath) ? configPath : [configPath]));
     const changelog = await load(output);
     const actualRepo = repo || config?.repo;
     const result = await (0, action_1.exec)(version, dateOrNow(date), {
@@ -99,9 +127,14 @@ async function load(path) {
     }
     return data;
 }
-async function loadJSON(path) {
-    const data = await load(path);
-    return data ? JSON.parse(data) : undefined;
+async function loadJSON(...paths) {
+    for (const path of paths) {
+        const data = await load(path);
+        if (data) {
+            return yaml.load(data);
+        }
+    }
+    return undefined;
 }
 function argToBool(a, df) {
     if (a === "true")
