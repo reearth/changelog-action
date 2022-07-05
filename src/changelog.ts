@@ -137,8 +137,9 @@ export function generateChangelogScope({
       );
   const knownPrefixes = Object.keys(prefixes);
   const unknownPrefixes = Object.keys(commitPrefixes)
-    .filter((p) => p && !knownPrefixes.includes(p))
-    .sort();
+    .filter((p) => !!p && !knownPrefixes.includes(p))
+    .sort()
+    .concat(commitPrefixes[""] ? [""] : []);
 
   return [
     ...(scopeTitle === false
@@ -228,20 +229,16 @@ export function generateChangelogPrefix({
   const processdCommits = sortCommits(commits, dedupSameMessages);
 
   return [
-    ...(title
-      ? [
-          render(prefixTemplate, {
-            scope,
-            scopeName,
-            scopeTitle,
-            prefix,
-            title,
-            repo,
-            commits: processdCommits,
-          }),
-          "",
-        ]
-      : []),
+    render(prefixTemplate, {
+      scope,
+      scopeName,
+      scopeTitle,
+      prefix,
+      title,
+      repo,
+      commits: processdCommits,
+    }),
+    "",
     ...processdCommits.map((commit) =>
       generateChangelogCommit({
         commit,

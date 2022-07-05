@@ -98,7 +98,9 @@ if (!githubAction && args.help) {
   });
 
   const newChangelog = insertChangelog(
-    (changelog || config?.defaultChangelog) ?? defaultChangelog,
+    changelog && changelog.trim().length > 0
+      ? changelog
+      : config?.defaultChangelog ?? defaultChangelog,
     result.changelog,
     result.version,
     config?.versionTemplate
@@ -113,14 +115,20 @@ if (!githubAction && args.help) {
     setOutput("newChangelog", newChangelog);
   }
 
-  if (!noEmit) {
+  if (!noEmit && output !== "-") {
     await promises.writeFile(output, newChangelog);
-    console.log(`${githubAction ? "\n" : ""}Changelog was saved to ${output}`);
+    console.error(
+      `${githubAction ? "\n" : ""}Changelog was saved to ${output}`
+    );
 
     if (latest) {
       await promises.writeFile(latest, result.changelogWithoutTitle);
-      console.log(`Changelog only for the new version was saved to ${latest}`);
+      console.error(
+        `Changelog only for the new version was saved to ${latest}`
+      );
     }
+  } else if (!githubAction) {
+    console.log(newChangelog);
   }
 })().catch((err) => {
   if (githubAction) {
@@ -140,7 +148,9 @@ function dateOrNow(date?: string): Date {
 async function load(path: string): Promise<string | undefined> {
   let data: string | undefined;
   try {
-    data = await promises.readFile(path, "utf8");
+    data = await (path && path !== "-"
+      ? promises.readFile(path, "utf8")
+      : readStdin());
   } catch (err) {
     if (!err || typeof err !== "object" || (err as any).code !== "ENOENT") {
       throw err;
@@ -163,4 +173,12 @@ function argToBool(a: string | undefined, df: boolean): boolean {
   if (a === "true") return true;
   if (a === "false") return false;
   return df;
+}
+
+async function readStdin(): Promise<string> {
+  const buffers = [];
+  for await (const chunk of process.stdin) {
+    buffers.push(chunk);
+  }
+  return Buffer.concat(buffers).toString();
 }

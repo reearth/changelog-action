@@ -35,7 +35,7 @@ jobs:
         with:
           name: ${{ steps.changelog.outputs.version }}
           tag: ${{ steps.changelog.outputs.version }}
-          body: ${{ steps.changelog.outputs.changelogLatest }}
+          body: ${{ steps.changelog.outputs.changelog }}
 ```
 
 # Fine Features
@@ -79,23 +79,14 @@ with:
 
 # Outputs
 
-## `version`
+- `version`: the new version. e.g. `v1.1.1`
+- `prevVersion`: the previous version. e.g. `v1.1.0`. If there was no previous version, it will be empty.
+- `date`: a date string of the new version. e.g. `2022/06/30`
+- `changelog`: the contents of a changelog only for the new version. It is useful for a body of a new GitHub Release.
+- `newChangelog`: the whole contents of the new `CHANGELOG.md`
+- `oldChangelog`: the whole contents of the previous `CHANGELOG.md`
 
-The new version. e.g. `v1.1.1`
-
-## `prevVersion`
-
-The previous version. e.g. `v1.1.0`
-
-If there was no previous version, it will be empty.
-
-## `date`
-
-A date string of the new version. e.g. `2022/06/30`
-
-## `changelog`
-
-The contents of a changelog only for the new version. It is useful for a body of a new GitHub Release.
+An example of `changelog` output:
 
 ```md
 ### Features
@@ -108,14 +99,6 @@ The contents of a changelog only for the new version. It is useful for a body of
 - Fix bugs (#1) `zzzzzz`
 ```
 
-## `newChangelog`
-
-The whole contents of the new `CHANGELOG.md`
-
-## `oldChangelog`
-
-The whole contents of the previous `CHANGELOG.md`
-
 # Configurations
 
 `.github/changelog.yml`
@@ -126,7 +109,7 @@ prefixes:
   feat:
     title: Features
   fix: Bug fixes
-  revert: false
+  '': false # hide commits without prefix
 scopes:
   hoge:
     title: Hoge

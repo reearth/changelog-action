@@ -84,7 +84,9 @@ if (!githubAction && args.help) {
             ? undefined
             : actualRepo || process.env.GITHUB_REPOSITORY,
     });
-    const newChangelog = (0, changelog_1.insertChangelog)((changelog || config?.defaultChangelog) ?? defaultChangelog, result.changelog, result.version, config?.versionTemplate);
+    const newChangelog = (0, changelog_1.insertChangelog)(changelog && changelog.trim().length > 0
+        ? changelog
+        : config?.defaultChangelog ?? defaultChangelog, result.changelog, result.version, config?.versionTemplate);
     if (githubAction) {
         (0, core_1.setOutput)("changelog", result.changelogWithoutTitle);
         (0, core_1.setOutput)("version", result.version);
@@ -93,13 +95,16 @@ if (!githubAction && args.help) {
         (0, core_1.setOutput)("oldChangelog", changelog);
         (0, core_1.setOutput)("newChangelog", newChangelog);
     }
-    if (!noEmit) {
+    if (!noEmit && output !== "-") {
         await fs_1.promises.writeFile(output, newChangelog);
-        console.log(`${githubAction ? "\n" : ""}Changelog was saved to ${output}`);
+        console.error(`${githubAction ? "\n" : ""}Changelog was saved to ${output}`);
         if (latest) {
             await fs_1.promises.writeFile(latest, result.changelogWithoutTitle);
-            console.log(`Changelog only for the new version was saved to ${latest}`);
+            console.error(`Changelog only for the new version was saved to ${latest}`);
         }
+    }
+    else if (!githubAction) {
+        console.log(newChangelog);
     }
 })().catch((err) => {
     if (githubAction) {
@@ -118,7 +123,9 @@ function dateOrNow(date) {
 async function load(path) {
     let data;
     try {
-        data = await fs_1.promises.readFile(path, "utf8");
+        data = await (path && path !== "-"
+            ? fs_1.promises.readFile(path, "utf8")
+            : readStdin());
     }
     catch (err) {
         if (!err || typeof err !== "object" || err.code !== "ENOENT") {
@@ -142,4 +149,11 @@ function argToBool(a, df) {
     if (a === "false")
         return false;
     return df;
+}
+async function readStdin() {
+    const buffers = [];
+    for await (const chunk of process.stdin) {
+        buffers.push(chunk);
+    }
+    return Buffer.concat(buffers).toString();
 }

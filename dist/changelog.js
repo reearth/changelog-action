@@ -87,8 +87,9 @@ function generateChangelogScope({ commits, scope, scopeName, scopeTitle, prefixe
         : mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefixes));
     const knownPrefixes = Object.keys(prefixes);
     const unknownPrefixes = Object.keys(commitPrefixes)
-        .filter((p) => p && !knownPrefixes.includes(p))
-        .sort();
+        .filter((p) => !!p && !knownPrefixes.includes(p))
+        .sort()
+        .concat(commitPrefixes[""] ? [""] : []);
     return [
         ...(scopeTitle === false
             ? []
@@ -144,20 +145,16 @@ function generateChangelogPrefix({ commits, prefix, title, repo, scope, scopeNam
         return "";
     const processdCommits = sortCommits(commits, dedupSameMessages);
     return [
-        ...(title
-            ? [
-                render(prefixTemplate, {
-                    scope,
-                    scopeName,
-                    scopeTitle,
-                    prefix,
-                    title,
-                    repo,
-                    commits: processdCommits,
-                }),
-                "",
-            ]
-            : []),
+        render(prefixTemplate, {
+            scope,
+            scopeName,
+            scopeTitle,
+            prefix,
+            title,
+            repo,
+            commits: processdCommits,
+        }),
+        "",
         ...processdCommits.map((commit) => generateChangelogCommit({
             commit,
             repo,

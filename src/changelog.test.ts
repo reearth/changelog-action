@@ -209,12 +209,17 @@ test("generateChangelogScope", () => {
     "#### chore",
     "",
     "- A",
+    "",
+    "#### ",
+    "",
+    "- B",
   ]);
   expect(
     generateChangelogScope({
       commits: [
         { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
         { subject: "foobar", prefix: "fix", date: new Date(2000, 1, 1) },
+        { subject: "foobar", date: new Date(2000, 1, 1) },
       ],
       scope: true,
       scopeName: "scope",
@@ -222,12 +227,23 @@ test("generateChangelogScope", () => {
       prefixes: {},
       dedupSameMessages: false,
     }).split("\n")
-  ).toEqual(["### Scope", "", "#### fix", "", "- Foobar", "- Foobar"]);
+  ).toEqual([
+    "### Scope",
+    "",
+    "#### fix",
+    "",
+    "- Foobar",
+    "- Foobar",
+    "",
+    "#### ",
+    "",
+    "- Foobar",
+  ]);
   expect(
     generateChangelogScope({
       commits: [
         { subject: "hoge", prefix: "fix", date: new Date(2000, 1, 1) },
-        { subject: "foobar", prefix: "fix", date: new Date(2000, 2, 1) },
+        { subject: "foobar", date: new Date(2000, 2, 1) },
       ],
       groupByPrefix: false,
       scope: true,
