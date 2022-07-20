@@ -23,7 +23,8 @@ async function getCommits(from) {
         to: "HEAD",
     })).all
         .filter((l) => !l.message.startsWith("Revert ") &&
-        !l.message.startsWith("Merge branch "))
+        !l.message.startsWith("Merge branch ") &&
+        !l.message.startsWith("Merge commit "))
         .map((l) => ({
         body: l.body,
         hash: l.hash,
