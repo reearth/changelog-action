@@ -85,6 +85,9 @@ if (!githubAction && args.help) {
   const config: Config | undefined = await loadJSON(
     ...(Array.isArray(configPath) ? configPath : [configPath])
   );
+  console.error(
+    `Config loaded from ${JSON.stringify(config)}: ${JSON.stringify(config)}`
+  );
   const changelog = await load(output);
 
   const actualRepo = repo || config?.repo;
