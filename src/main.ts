@@ -82,12 +82,15 @@ if (!githubAction && args.help) {
     noEmit,
   } = { ...options, ...args };
 
-  const config: Config | undefined = await loadJSON(
-    ...(Array.isArray(configPath) ? configPath : [configPath])
-  );
-  console.error(
-    `Config loaded from ${JSON.stringify(config)}: ${JSON.stringify(config)}`
-  );
+  const [loadedConfigPath, config]: [string, Config | undefined] =
+    await loadJSON(...(Array.isArray(configPath) ? configPath : [configPath]));
+  if (config) {
+    console.error(
+      `Config loaded from ${loadedConfigPath}: ${JSON.stringify(config)}${
+        githubAction ? "\n" : ""
+      }`
+    );
+  }
   const changelog = await load(output);
 
   const actualRepo = repo || config?.repo;
@@ -162,14 +165,15 @@ async function load(path: string): Promise<string | undefined> {
   return data;
 }
 
-async function loadJSON(...paths: string[]): Promise<any> {
+async function loadJSON(...paths: string[]): Promise<[string, any]> {
   for (const path of paths) {
     const data = await load(path);
     if (data) {
-      return yaml.load(data);
+      const d = await yaml.load(data);
+      return [path, d];
     }
   }
-  return undefined;
+  return ["", undefined];
 }
 
 function argToBool(a: string | undefined, df: boolean): boolean {

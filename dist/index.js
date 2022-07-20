@@ -570,8 +570,10 @@ if (!githubAction && args.help) {
         ".github/changelog.json",
         ".github/changelog.yaml",
     ], noEmit, } = { ...options, ...args };
-    const config = await loadJSON(...(Array.isArray(configPath) ? configPath : [configPath]));
-    console.error(`Config loaded from ${JSON.stringify(config)}: ${JSON.stringify(config)}`);
+    const [loadedConfigPath, config] = await loadJSON(...(Array.isArray(configPath) ? configPath : [configPath]));
+    if (config) {
+        console.error(`Config loaded from ${loadedConfigPath}: ${JSON.stringify(config)}${githubAction ? "\n" : ""}`);
+    }
     const changelog = await load(output);
     const actualRepo = repo || config?.repo;
     const result = await (0, action_1.exec)(version, dateOrNow(date), {
@@ -634,10 +636,11 @@ async function loadJSON(...paths) {
     for (const path of paths) {
         const data = await load(path);
         if (data) {
-            return yaml.load(data);
+            const d = await yaml.load(data);
+            return [path, d];
         }
     }
-    return undefined;
+    return ["", undefined];
 }
 function argToBool(a, df) {
     if (a === "true")
