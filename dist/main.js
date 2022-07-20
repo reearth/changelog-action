@@ -76,6 +76,7 @@ if (!githubAction && args.help) {
         ".github/changelog.yaml",
     ], noEmit, } = { ...options, ...args };
     const config = await loadJSON(...(Array.isArray(configPath) ? configPath : [configPath]));
+    console.error(`Config loaded from ${JSON.stringify(config)}: ${JSON.stringify(config)}`);
     const changelog = await load(output);
     const actualRepo = repo || config?.repo;
     const result = await (0, action_1.exec)(version, dateOrNow(date), {

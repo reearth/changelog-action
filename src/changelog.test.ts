@@ -47,6 +47,7 @@ test("generateChangelog", () => {
           date: new Date(2021, 1, 1),
         },
         { subject: "c", prefix: "ci", date: new Date(2021, 1, 1) },
+        { subject: "v1.0.0", prefix: "", date: new Date(2021, 1, 1) },
       ],
       {
         prefixes: {
@@ -59,6 +60,7 @@ test("generateChangelog", () => {
           web2: "web2",
           web3: { title: "web2" },
         },
+        omittedCommitPattern: "^v",
       }
     )[0].split("\n")
   ).toEqual([

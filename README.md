@@ -116,6 +116,7 @@ scopes:
     repo: reearth/changelog-action-2
 disableFirstLetterCapitalization: false
 dedupSameMessages: true
+omittedCommitPattern: ^v\d+\.\d+\.\d+
 groupByScopes: null
 groupByPrefixes: null
 versionPrefix: null
@@ -143,6 +144,8 @@ type Option = {
   capitalizeFirstLetter?: boolean;
   // Deduplicate commits for the same message from changelog. Default is true.
   dedupSameMessages?: boolean;
+  // Regular expression matching the subject of the commit to be omitted from the changelog. An empty string will not omit any commit. Default: ^v\d+\.\d+\.\d+
+  omittedCommitPattern?: string;
   // If true, groups commit messages by scopes. Default: null (automatically decided)
   groupByScopes?: boolean;
   // If true, groups commit messages by prefixes. Default: true

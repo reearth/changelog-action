@@ -24,6 +24,7 @@ export type Option = {
   };
   capitalizeFirstLetter?: boolean;
   dedupSameMessages?: boolean;
+  omittedCommitPattern?: string;
   groupByScopes?: boolean;
   groupByPrefix?: boolean;
   linkPRs?: boolean;
@@ -43,6 +44,7 @@ const defaultScopeTemplate = "### {{title}}";
 const defaultPrefixTemplate = "###{{#scope}}#{{/scope}} {{title}}";
 const defaultCommitTemplate =
   "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}";
+const defaultOmittedCommitPattern = /^v\d+\.\d+\.\d+/;
 
 export function generateChangelog(
   version: string,
@@ -50,8 +52,21 @@ export function generateChangelog(
   commits: Commit[],
   options?: Option
 ): [string, string, string] {
+  const omittedCommitPatternRegex = options?.omittedCommitPattern
+    ? new RegExp(options.omittedCommitPattern)
+    : options?.omittedCommitPattern === ""
+    ? undefined
+    : defaultOmittedCommitPattern;
+
   const commitScopes = mergeGroups(
-    groupBy(commits, (c) => c.scope ?? ""),
+    groupBy(
+      commits.filter(
+        (c) =>
+          !omittedCommitPatternRegex ||
+          !omittedCommitPatternRegex.test(c.subject)
+      ),
+      (c) => c.scope ?? ""
+    ),
     detectMerge(options?.scopes ?? {})
   );
 
@@ -123,6 +138,7 @@ export function generateChangelogScope({
   groupByPrefix?: boolean;
   dedupSameMessages?: boolean;
   capitalizeFirstLetter?: boolean;
+  omittedCommitPattern?: RegExp;
   linkHashes?: boolean;
   linkPRs?: boolean;
   scopeTemplate?: string;
@@ -220,6 +236,7 @@ export function generateChangelogPrefix({
   scopeTitle?: string | false;
   dedupSameMessages?: boolean;
   capitalizeFirstLetter?: boolean;
+  omittedCommitPattern?: RegExp;
   linkHashes?: boolean;
   linkPRs?: boolean;
   prefixTemplate?: string;
@@ -241,18 +258,20 @@ export function generateChangelogPrefix({
       commits: processdCommits,
     }),
     "",
-    ...processdCommits.map((commit) =>
-      generateChangelogCommit({
-        commit,
-        repo,
-        template: commitTemplate,
-        scope,
-        scopeName,
-        scopeTitle,
-        dateFormat: commitDateFormat,
-        ...options,
-      })
-    ),
+    ...processdCommits
+      .map((commit) =>
+        generateChangelogCommit({
+          commit,
+          repo,
+          template: commitTemplate,
+          scope,
+          scopeName,
+          scopeTitle,
+          dateFormat: commitDateFormat,
+          ...options,
+        })
+      )
+      .filter(Boolean),
   ].join("\n");
 }
 

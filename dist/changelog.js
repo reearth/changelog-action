@@ -34,8 +34,15 @@ const defaultVersionTemplate = "## {{#unreleased}}Unreleased{{/unreleased}}{{^un
 const defaultScopeTemplate = "### {{title}}";
 const defaultPrefixTemplate = "###{{#scope}}#{{/scope}} {{title}}";
 const defaultCommitTemplate = "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}";
+const defaultOmittedCommitPattern = /^v\d+\.\d+\.\d+/;
 function generateChangelog(version, date, commits, options) {
-    const commitScopes = mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.scope ?? ""), detectMerge(options?.scopes ?? {}));
+    const omittedCommitPatternRegex = options?.omittedCommitPattern
+        ? new RegExp(options.omittedCommitPattern)
+        : options?.omittedCommitPattern === ""
+            ? undefined
+            : defaultOmittedCommitPattern;
+    const commitScopes = mergeGroups((0, lodash_1.groupBy)(commits.filter((c) => !omittedCommitPatternRegex ||
+        !omittedCommitPatternRegex.test(c.subject)), (c) => c.scope ?? ""), detectMerge(options?.scopes ?? {}));
     const scopes = Object.keys(commitScopes);
     const knownScopes = Object.keys(options?.scopes ?? []);
     const unknownScopes = scopes
@@ -155,7 +162,8 @@ function generateChangelogPrefix({ commits, prefix, title, repo, scope, scopeNam
             commits: processdCommits,
         }),
         "",
-        ...processdCommits.map((commit) => generateChangelogCommit({
+        ...processdCommits
+            .map((commit) => generateChangelogCommit({
             commit,
             repo,
             template: commitTemplate,
@@ -164,7 +172,8 @@ function generateChangelogPrefix({ commits, prefix, title, repo, scope, scopeNam
             scopeTitle,
             dateFormat: commitDateFormat,
             ...options,
-        })),
+        }))
+            .filter(Boolean),
     ].join("\n");
 }
 exports.generateChangelogPrefix = generateChangelogPrefix;
