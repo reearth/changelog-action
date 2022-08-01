@@ -23,14 +23,12 @@ inputs:
   output:
     description: CHANGELOG.md file path
     required: false
-    default: CHANGELOG.md
   noEmit:
     description: If true, any files will not be emitted. The result is only available from the outputs.
     required: false
   config:
-    description: Config JSON file path
+    description: Config file path
     required: false
-    default: .github/changelog.json
 outputs:
   changelog:
     description: The latest CHANGELOG
