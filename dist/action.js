@@ -5,8 +5,8 @@ const changelog_1 = require("./changelog");
 const core_1 = require("./core");
 const initialVersion = "v0.1.0";
 async function exec(version, date, options) {
-    const { all: tags, latest } = await (0, core_1.getTags)();
-    const commits = await (0, core_1.getCommits)(latest);
+    const { all: tags, latest, latestDate } = await (0, core_1.getTags)();
+    const commits = await (0, core_1.getCommits)(latest, options?.includeOldCommits ? undefined : latestDate);
     const nextVersion = latest
         ? (0, core_1.bumpVersion)(latest, version || (0, core_1.getBumpFromCommits)(commits, options?.minorPrefixes))
         : (0, core_1.isValidVersion)(version || "")

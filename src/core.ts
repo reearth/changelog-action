@@ -5,14 +5,28 @@ import { type Commit } from "./changelog";
 
 const git = simpleGit();
 
-export function getTags(): Promise<{
+export async function getTags(): Promise<{
   all: string[];
   latest: string | undefined;
+  latestDate: Date | undefined;
 }> {
-  return git.tags();
+  const tags = await git.tags();
+  const log = tags.latest
+    ? await git.log({
+        from: tags.latest,
+        maxCount: 1,
+      })
+    : undefined;
+  return {
+    ...tags,
+    latestDate: log?.latest ? new Date(log.latest.date) : undefined,
+  };
 }
 
-export async function getCommits(from?: string): Promise<Commit[]> {
+export async function getCommits(
+  from?: string,
+  since?: Date
+): Promise<Commit[]> {
   if (!from) {
     from = (await git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim();
     if (!from) {
@@ -30,7 +44,8 @@ export async function getCommits(from?: string): Promise<Commit[]> {
       (l) =>
         !l.message.startsWith("Revert ") &&
         !l.message.startsWith("Merge branch ") &&
-        !l.message.startsWith("Merge commit ")
+        !l.message.startsWith("Merge commit ") &&
+        (!since || new Date(l.date) > since)
     )
     .map((l) => ({
       body: l.body,

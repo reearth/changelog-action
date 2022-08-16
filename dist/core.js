@@ -7,11 +7,21 @@ exports.bumpVersion = exports.getBumpFromCommits = exports.isValidVersion = expo
 const semver_1 = require("semver");
 const simple_git_1 = __importDefault(require("simple-git"));
 const git = (0, simple_git_1.default)();
-function getTags() {
-    return git.tags();
+async function getTags() {
+    const tags = await git.tags();
+    const log = tags.latest
+        ? await git.log({
+            from: tags.latest,
+            maxCount: 1,
+        })
+        : undefined;
+    return {
+        ...tags,
+        latestDate: log?.latest ? new Date(log.latest.date) : undefined,
+    };
 }
 exports.getTags = getTags;
-async function getCommits(from) {
+async function getCommits(from, since) {
     if (!from) {
         from = (await git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim();
         if (!from) {
@@ -24,7 +34,8 @@ async function getCommits(from) {
     })).all
         .filter((l) => !l.message.startsWith("Revert ") &&
         !l.message.startsWith("Merge branch ") &&
-        !l.message.startsWith("Merge commit "))
+        !l.message.startsWith("Merge commit ") &&
+        (!since || new Date(l.date) > since))
         .map((l) => ({
         body: l.body,
         hash: l.hash,

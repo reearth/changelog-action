@@ -12,8 +12,8 @@ const changelog_1 = __nccwpck_require__(7412);
 const core_1 = __nccwpck_require__(5865);
 const initialVersion = "v0.1.0";
 async function exec(version, date, options) {
-    const { all: tags, latest } = await (0, core_1.getTags)();
-    const commits = await (0, core_1.getCommits)(latest);
+    const { all: tags, latest, latestDate } = await (0, core_1.getTags)();
+    const commits = await (0, core_1.getCommits)(latest, options?.includeOldCommits ? undefined : latestDate);
     const nextVersion = latest
         ? (0, core_1.bumpVersion)(latest, version || (0, core_1.getBumpFromCommits)(commits, options?.minorPrefixes))
         : (0, core_1.isValidVersion)(version || "")
@@ -411,11 +411,21 @@ exports.bumpVersion = exports.getBumpFromCommits = exports.isValidVersion = expo
 const semver_1 = __nccwpck_require__(1383);
 const simple_git_1 = __importDefault(__nccwpck_require__(9103));
 const git = (0, simple_git_1.default)();
-function getTags() {
-    return git.tags();
+async function getTags() {
+    const tags = await git.tags();
+    const log = tags.latest
+        ? await git.log({
+            from: tags.latest,
+            maxCount: 1,
+        })
+        : undefined;
+    return {
+        ...tags,
+        latestDate: log?.latest ? new Date(log.latest.date) : undefined,
+    };
 }
 exports.getTags = getTags;
-async function getCommits(from) {
+async function getCommits(from, since) {
     if (!from) {
         from = (await git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim();
         if (!from) {
@@ -428,7 +438,8 @@ async function getCommits(from) {
     })).all
         .filter((l) => !l.message.startsWith("Revert ") &&
         !l.message.startsWith("Merge branch ") &&
-        !l.message.startsWith("Merge commit "))
+        !l.message.startsWith("Merge commit ") &&
+        (!since || new Date(l.date) > since))
         .map((l) => ({
         body: l.body,
         hash: l.hash,

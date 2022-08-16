@@ -12,6 +12,7 @@ const initialVersion = "v0.1.0";
 export type Option = BaseOption & {
   minorPrefixes?: string[];
   initialVersion?: string;
+  includeOldCommits?: boolean;
 };
 
 export async function exec(
@@ -25,8 +26,11 @@ export async function exec(
   version: string;
   prevVersion: string | undefined;
 }> {
-  const { all: tags, latest } = await getTags();
-  const commits = await getCommits(latest);
+  const { all: tags, latest, latestDate } = await getTags();
+  const commits = await getCommits(
+    latest,
+    options?.includeOldCommits ? undefined : latestDate
+  );
 
   const nextVersion = latest
     ? bumpVersion(
