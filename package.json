@@ -13,7 +13,7 @@
   "scripts": {
     "start": "node ./dist/main.js",
     "test": "vitest",
-    "build": "tsc && ncc build dist/main.js",
+    "build": "ncc build src/main.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
