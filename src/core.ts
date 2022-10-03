@@ -13,8 +13,8 @@ export async function getTags(): Promise<{
   const tags = await git.tags();
   const log = tags.latest
     ? await git.log({
-        from: tags.latest,
-        maxCount: 1,
+        from: tags.latest + "~",
+        to: tags.latest,
       })
     : undefined;
   return {
@@ -45,6 +45,7 @@ export async function getCommits(
         !l.message.startsWith("Revert ") &&
         !l.message.startsWith("Merge branch ") &&
         !l.message.startsWith("Merge commit ") &&
+        !l.message.match(/^v\d+\./) &&
         (!since || new Date(l.date) > since)
     )
     .map((l) => ({

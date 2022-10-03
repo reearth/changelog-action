@@ -27,6 +27,7 @@ export async function exec(
   prevVersion: string | undefined;
 }> {
   const { all: tags, latest, latestDate } = await getTags();
+
   const commits = await getCommits(
     latest,
     options?.includeOldCommits ? undefined : latestDate

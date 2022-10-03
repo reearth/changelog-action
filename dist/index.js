@@ -1,677 +1,6 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 9957:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.exec = void 0;
-const changelog_1 = __nccwpck_require__(7412);
-const core_1 = __nccwpck_require__(5865);
-const initialVersion = "v0.1.0";
-async function exec(version, date, options) {
-    const { all: tags, latest, latestDate } = await (0, core_1.getTags)();
-    const commits = await (0, core_1.getCommits)(latest, options?.includeOldCommits ? undefined : latestDate);
-    const nextVersion = latest
-        ? (0, core_1.bumpVersion)(latest, version || (0, core_1.getBumpFromCommits)(commits, options?.minorPrefixes))
-        : (0, core_1.isValidVersion)(version || "")
-            ? version
-            : !latest
-                ? options?.initialVersion || initialVersion
-                : undefined;
-    if (!nextVersion) {
-        throw new Error(`invalid version: ${version}`);
-    }
-    if (tags.includes(nextVersion)) {
-        throw new Error(`The next version already exists in tags: ${nextVersion}`);
-    }
-    const [changelog, changelogWithoutTitle, changelogDate] = (0, changelog_1.generateChangelog)(nextVersion, date, commits, options);
-    return {
-        changelog,
-        changelogWithoutTitle,
-        version: nextVersion,
-        prevVersion: latest,
-        date: changelogDate,
-    };
-}
-exports.exec = exec;
-
-
-/***/ }),
-
-/***/ 7412:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.escapeRegex = exports.findVersionSection = exports.insertChangelog = exports.fixMarkdownLinkedCode = exports.hashLinks = exports.prLinks = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogScope = exports.generateChangelog = void 0;
-const date_fns_1 = __nccwpck_require__(3314);
-const lodash_1 = __nccwpck_require__(250);
-const mustache = __importStar(__nccwpck_require__(8272));
-const semver_1 = __nccwpck_require__(1383);
-const render = mustache.render ?? mustache.default.render;
-const defaultDateFormat = "yyyy-MM-dd";
-const defaultVersionTemplate = "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}";
-const defaultScopeTemplate = "### {{title}}";
-const defaultPrefixTemplate = "###{{#scope}}#{{/scope}} {{title}}";
-const defaultCommitTemplate = "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}";
-const defaultOmittedCommitPattern = /^v\d+\.\d+\.\d+/;
-function generateChangelog(version, date, commits, options) {
-    const omittedCommitPatternRegex = options?.omittedCommitPattern
-        ? new RegExp(options.omittedCommitPattern)
-        : options?.omittedCommitPattern === ""
-            ? undefined
-            : defaultOmittedCommitPattern;
-    const commitScopes = mergeGroups((0, lodash_1.groupBy)(commits.filter((c) => !omittedCommitPatternRegex ||
-        !omittedCommitPatternRegex.test(c.subject)), (c) => c.scope ?? ""), detectMerge(options?.scopes ?? {}));
-    const scopes = Object.keys(commitScopes);
-    const knownScopes = Object.keys(options?.scopes ?? []);
-    const unknownScopes = scopes
-        .filter((g) => g && !knownScopes.includes(g))
-        .sort();
-    const scopeEnabled = options?.groupByScopes ??
-        (scopes.length > 1 || !!scopes[0] || !!knownScopes.length);
-    const formattedDate = (0, date_fns_1.format)(date, options?.dateFormat || defaultDateFormat);
-    const result = [
-        renderVersionHeader(options?.versionTemplate, version, formattedDate),
-        "",
-        ...[
-            ...Object.entries(options?.scopes ?? []),
-            ...unknownScopes.map((g) => [g, g]),
-            ["", ""],
-        ]
-            .filter(([key, g]) => g !== false && commitScopes[key]?.length)
-            .flatMap(([key, scope]) => {
-            const title = typeof scope === "string" ? scope : scope ? scope.title : undefined;
-            return [
-                generateChangelogScope({
-                    commits: commitScopes[key],
-                    scope: scopeEnabled,
-                    scopeName: key,
-                    scopeTitle: scopeEnabled ? title || key || "" : false,
-                    prefixes: options?.prefixes ?? {},
-                    repo: (typeof scope === "object" ? scope?.repo : null) ?? options?.repo,
-                    dedupSameMessages: options?.dedupSameMessages,
-                    capitalizeFirstLetter: options?.capitalizeFirstLetter,
-                    linkHashes: options?.linkHashes,
-                    linkPRs: options?.linkPRs,
-                    scopeTemplate: options?.scopeTemplate,
-                    prefixTemplate: options?.prefixTemplate,
-                    commitTemplate: options?.commitTemplate,
-                }),
-                "",
-            ];
-        })
-            .slice(0, -1),
-    ];
-    return [result.join("\n"), result.slice(2).join("\n"), formattedDate];
-}
-exports.generateChangelog = generateChangelog;
-function generateChangelogScope({ commits, scope, scopeName, scopeTitle, prefixes, repo, groupByPrefix = true, scopeTemplate = defaultScopeTemplate, ...options }) {
-    if (!commits.length)
-        return "";
-    const commitPrefixes = !groupByPrefix
-        ? {}
-        : mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefixes));
-    const knownPrefixes = Object.keys(prefixes);
-    const unknownPrefixes = Object.keys(commitPrefixes)
-        .filter((p) => !!p && !knownPrefixes.includes(p))
-        .sort()
-        .concat(commitPrefixes[""] ? [""] : []);
-    return [
-        ...(scopeTitle === false
-            ? []
-            : [
-                render(scopeTemplate, {
-                    scope,
-                    name: scopeName,
-                    title: scopeTitle,
-                    repo,
-                    commits,
-                }),
-                "",
-            ]),
-        ...(groupByPrefix
-            ? [...Object.entries(prefixes), ...unknownPrefixes.map((p) => [p, p])]
-            : [])
-            .filter(([key, prefix]) => prefix !== false &&
-            (typeof prefix !== "object" || prefix?.title !== false) &&
-            commitPrefixes[key]?.length)
-            .flatMap(([key, prefix]) => [
-            generateChangelogPrefix({
-                commits: commitPrefixes[key],
-                scope,
-                scopeName,
-                scopeTitle,
-                prefix: key,
-                title: (typeof prefix === "object" ? prefix.title : prefix) || key,
-                repo,
-                ...options,
-            }),
-            "",
-        ])
-            .slice(0, -1),
-        ...(!groupByPrefix
-            ? sortCommits(commits, options.dedupSameMessages).map((commit) => [
-                generateChangelogCommit({
-                    commit,
-                    repo,
-                    scope,
-                    scopeName,
-                    scopeTitle,
-                    template: options.commitTemplate,
-                    dateFormat: options.commitDateFormat,
-                    ...options,
-                }),
-            ])
-            : []),
-    ].join("\n");
-}
-exports.generateChangelogScope = generateChangelogScope;
-function generateChangelogPrefix({ commits, prefix, title, repo, scope, scopeName, scopeTitle, dedupSameMessages, prefixTemplate = defaultPrefixTemplate, commitTemplate, commitDateFormat, ...options }) {
-    if (!commits?.length)
-        return "";
-    const processdCommits = sortCommits(commits, dedupSameMessages);
-    return [
-        render(prefixTemplate, {
-            scope,
-            scopeName,
-            scopeTitle,
-            prefix,
-            title,
-            repo,
-            commits: processdCommits,
-        }),
-        "",
-        ...processdCommits
-            .map((commit) => generateChangelogCommit({
-            commit,
-            repo,
-            template: commitTemplate,
-            scope,
-            scopeName,
-            scopeTitle,
-            dateFormat: commitDateFormat,
-            ...options,
-        }))
-            .filter(Boolean),
-    ].join("\n");
-}
-exports.generateChangelogPrefix = generateChangelogPrefix;
-function sortCommits(commits, dedupSameMessages = true) {
-    return (dedupSameMessages ? (0, lodash_1.uniqBy)(commits, (c) => c.subject) : commits.concat()).sort((a, b) => b.date.getTime() - a.date.getTime());
-}
-function generateChangelogCommit({ commit, template = defaultCommitTemplate, repo, scope, scopeName, scopeTitle, dateFormat = defaultDateFormat, capitalizeFirstLetter = true, linkHashes = true, linkPRs = true, }) {
-    repo = getRepoUrl(repo);
-    const shortHash = commit.hash?.slice(0, 6);
-    let message = render(template, {
-        ...commit,
-        date: (0, date_fns_1.format)(commit.date, dateFormat),
-        subject: firstUppercase(commit.subject, capitalizeFirstLetter),
-        shortHash,
-        repo,
-        scope,
-        scopeName,
-        scopeTitle,
-    });
-    if (linkPRs) {
-        message = prLinks(message, repo);
-    }
-    if (linkHashes && repo && commit.hash) {
-        message = hashLinks(message, commit.hash, repo);
-    }
-    return fixMarkdownLinkedCode(message);
-}
-exports.generateChangelogCommit = generateChangelogCommit;
-function prLinks(md, repo) {
-    return repo
-        ? md.replace(/(^|[^[])#(\d+?)(\D|$)/g, `$1[#$2](${repo}/pull/$2)$3`)
-        : md;
-}
-exports.prLinks = prLinks;
-function hashLinks(md, hash, repo) {
-    hash = hash.replace(/[^0-9a-z]/g, "");
-    const shortHash = hash.slice(0, 6);
-    return repo
-        ? md.replace(new RegExp(`${hash}|${shortHash}`, "g"), `[$&](${repo}/commit/${shortHash})`)
-        : md;
-}
-exports.hashLinks = hashLinks;
-function fixMarkdownLinkedCode(md) {
-    return md.replace(/`\[(.+?)\]\((.+?)\)`/g, "[`$1`]($2)");
-}
-exports.fixMarkdownLinkedCode = fixMarkdownLinkedCode;
-function getRepoUrl(repo) {
-    return repo?.startsWith("http")
-        ? repo.replace(/\/$/, "")
-        : repo
-            ? `https://github.com/${repo}`
-            : "";
-}
-function insertChangelog(changelog, inserting, version, template) {
-    // remove unreleased section
-    if (version !== "unreleased") {
-        const u = findVersionSection(changelog, "unreleased", template);
-        if (u) {
-            changelog =
-                changelog.slice(0, u[0]) + (u[1] === null ? "" : changelog.slice(u[1]));
-        }
-    }
-    let m = findVersionSection(changelog, version, template);
-    if (!m) {
-        const n = version
-            ? findVersionSection(changelog, undefined, template)
-            : null;
-        if (!n)
-            return (changelog.trim() + "\n\n" + inserting).trim();
-        m = n;
-    }
-    const [start, end] = m;
-    return (changelog.slice(0, start) +
-        inserting.trim() +
-        "\n\n" +
-        (end ? changelog.slice(end) : "")).trim();
-}
-exports.insertChangelog = insertChangelog;
-function renderVersionHeader(template, version, formattedDate) {
-    return render(template || defaultVersionTemplate, {
-        version,
-        versionWithPrefix: `v${version.replace(/^v/, "")}`,
-        versionWithoutPrefix: version.replace(/^v/, ""),
-        unreleased: version === "unreleased",
-        prerelease: !!(0, semver_1.prerelease)(version),
-        date: formattedDate,
-    });
-}
-function findVersionSection(changelog, version, template) {
-    const trimmedVersion = version?.replace(/^v(\d)/, "$1");
-    const tmpl = renderVersionHeader(template, "{{___VERSION___}}", "{{___CHANGELOG_DATE___}}");
-    if (!tmpl.includes("{{___VERSION___}}"))
-        return null;
-    const re = new RegExp(escapeRegex(tmpl)
-        .replace("\\{\\{___VERSION___\\}\\}", "(.+)")
-        .replace("\\{\\{___CHANGELOG_DATE___\\}\\}", ".+"), "gm");
-    let i = null, j = null;
-    if (version === "unreleased") {
-        const reUnreleased = new RegExp(escapeRegex(renderVersionHeader(template, "unreleased", "{{___CHANGELOG_DATE___}}")).replace("\\{\\{___CHANGELOG_DATE___\\}\\}", ".+"), "m");
-        const m = reUnreleased.exec(changelog);
-        if (!m)
-            return null;
-        i = m.index;
-    }
-    for (let m; (m = re.exec(changelog));) {
-        if (!version ||
-            (i !== null && m.index !== i) ||
-            (version !== "unreleased" &&
-                trimmedVersion &&
-                m[1].replace(/^v(\d)/, "$1") === trimmedVersion)) {
-            if (i !== null) {
-                j = m.index;
-                break;
-            }
-            else {
-                i = m.index;
-                if (!version)
-                    break;
-            }
-        }
-    }
-    return i !== null ? [i, version ? j : i] : null;
-}
-exports.findVersionSection = findVersionSection;
-function escapeRegex(s) {
-    return s.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");
-}
-exports.escapeRegex = escapeRegex;
-function firstUppercase(subject, enabled) {
-    return enabled ? subject.charAt(0).toUpperCase() + subject.slice(1) : subject;
-}
-exports.firstUppercase = firstUppercase;
-function detectMerge(o) {
-    const m = new Map(Object.entries(o)
-        .map(([k, v]) => {
-        const t = getTitle(v);
-        return t ? [t, k] : null;
-    })
-        .filter((e) => !!e)
-        .reverse());
-    return Object.entries(o).reduce((a, [k, v]) => {
-        const t = getTitle(v);
-        if (!t)
-            return a;
-        const l = m.get(t);
-        if (!l || l === k)
-            return a;
-        return {
-            ...a,
-            [k]: l,
-        };
-    }, {});
-    function getTitle(e) {
-        return typeof e === "string"
-            ? e
-            : typeof e === "object" &&
-                e &&
-                "title" in e &&
-                typeof e.title === "string"
-                ? e.title
-                : "";
-    }
-}
-exports.detectMerge = detectMerge;
-function mergeGroups(o, m) {
-    return Object.entries(o).reduce((a, [k, v]) => m[k]
-        ? {
-            ...a,
-            [m[k]]: [...(a[m[k]] ?? []), ...v],
-        }
-        : { ...a, [k]: v }, {});
-}
-exports.mergeGroups = mergeGroups;
-
-
-/***/ }),
-
-/***/ 5865:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.bumpVersion = exports.getBumpFromCommits = exports.isValidVersion = exports.parseCommitMessage = exports.getCommits = exports.getTags = void 0;
-const semver_1 = __nccwpck_require__(1383);
-const simple_git_1 = __importDefault(__nccwpck_require__(9103));
-const git = (0, simple_git_1.default)();
-async function getTags() {
-    const tags = await git.tags();
-    const log = tags.latest
-        ? await git.log({
-            from: tags.latest,
-            maxCount: 1,
-        })
-        : undefined;
-    return {
-        ...tags,
-        latestDate: log?.latest ? new Date(log.latest.date) : undefined,
-    };
-}
-exports.getTags = getTags;
-async function getCommits(from, since) {
-    if (!from) {
-        from = (await git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim();
-        if (!from) {
-            throw new Error("there are no commits in this repo");
-        }
-    }
-    return (await git.log({
-        from,
-        to: "HEAD",
-    })).all
-        .filter((l) => !l.message.startsWith("Revert ") &&
-        !l.message.startsWith("Merge branch ") &&
-        !l.message.startsWith("Merge commit ") &&
-        (!since || new Date(l.date) > since))
-        .map((l) => ({
-        body: l.body,
-        hash: l.hash,
-        date: new Date(l.date),
-        ...parseCommitMessage(l.message),
-    }));
-}
-exports.getCommits = getCommits;
-const commitMessageReg = /^([a-z]+?)(?:\((.+?)\))?(!)?:(.*)$/;
-const prReg = /#(\d+)(?:\D|$)/;
-function parseCommitMessage(subject) {
-    const m = subject.match(commitMessageReg);
-    const s = m?.[4].trim() || subject;
-    return {
-        prefix: m?.[1],
-        scope: m?.[2],
-        breakingChange: !!m?.[3] || s.includes("BREAKING CHANGE"),
-        subject: s,
-        pr: s.match(prReg)?.[1],
-    };
-}
-exports.parseCommitMessage = parseCommitMessage;
-function isValidVersion(version) {
-    return version === "unreleased" || !!(0, semver_1.valid)(version);
-}
-exports.isValidVersion = isValidVersion;
-const defaultMinorPrefixes = ["feat"];
-function getBumpFromCommits(commits, minorPrefixes = defaultMinorPrefixes) {
-    for (const commit of commits) {
-        if (commit.breakingChange)
-            return "major";
-        if (commit.prefix && minorPrefixes.includes(commit.prefix))
-            return "minor";
-    }
-    return "patch";
-}
-exports.getBumpFromCommits = getBumpFromCommits;
-function bumpVersion(version, next) {
-    if (next === "major" ||
-        next === "premajor" ||
-        next === "minor" ||
-        next === "preminor" ||
-        next === "patch" ||
-        next === "prepatch" ||
-        next === "prerelease") {
-        const res = (0, semver_1.inc)(version, next);
-        if (!res?.startsWith("v") && version.startsWith("v")) {
-            return `v${res}`;
-        }
-        return res;
-    }
-    if (!next.startsWith("v") && version.startsWith("v")) {
-        return `v${next}`;
-    }
-    return next;
-}
-exports.bumpVersion = bumpVersion;
-
-
-/***/ }),
-
-/***/ 9496:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const fs_1 = __nccwpck_require__(7147);
-const core_1 = __nccwpck_require__(2186);
-const command_line_args_1 = __importDefault(__nccwpck_require__(5984));
-const command_line_usage_1 = __importDefault(__nccwpck_require__(7950));
-const yaml = __importStar(__nccwpck_require__(1917));
-const action_1 = __nccwpck_require__(9957);
-const changelog_1 = __nccwpck_require__(7412);
-const githubAction = !!process.env.GITHUB_ACTIONS;
-const defaultChangelog = "# Changelog\n\nAll notable changes to this project will be documented in this file.";
-const options = {
-    version: (0, core_1.getInput)("version") || process.env.CHANGELOG_VERSION,
-    date: (0, core_1.getInput)("date") || process.env.CHANGELOG_DATE,
-    repo: (0, core_1.getInput)("repo") || process.env.CHANGELOG_REPO,
-    latest: (0, core_1.getInput)("latest") || process.env.CHANGELOG_LATEST,
-    output: (0, core_1.getInput)("output") || process.env.CHANGELOG_OUTPUT,
-    configPath: (0, core_1.getInput)("config") || process.env.CHANGELOG_CONFIG,
-    noEmit: argToBool((0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT, false),
-};
-const argOptions = [
-    { name: "version", type: String, alias: "v" },
-    { name: "date", type: String, alias: "d" },
-    { name: "repo", type: String, alias: "r" },
-    { name: "latest", type: String, alias: "l" },
-    { name: "output", type: String, alias: "o" },
-    { name: "configPath", type: String, alias: "c" },
-    { name: "noEmit", type: Boolean, alias: "n" },
-    { name: "help", type: Boolean, alias: "h" },
-];
-const args = githubAction ? {} : (0, command_line_args_1.default)(argOptions);
-if (!githubAction && args.help) {
-    console.log((0, command_line_usage_1.default)([
-        {
-            header: "changelog",
-            content: "Generate CHANGELOG.md from git commit logs",
-        },
-        {
-            header: "Options",
-            optionList: argOptions,
-        },
-    ]));
-    // eslint-disable-next-line no-process-exit
-    process.exit(0);
-}
-(async function () {
-    const { version, date, repo, latest, output = "CHANGELOG.md", configPath = [
-        ".github/changelog.yml",
-        ".github/changelog.json",
-        ".github/changelog.yaml",
-    ], noEmit, } = { ...options, ...args };
-    const [loadedConfigPath, config] = await loadJSON(...(Array.isArray(configPath) ? configPath : [configPath]));
-    if (config) {
-        console.error(`Config loaded from ${loadedConfigPath}: ${JSON.stringify(config)}${githubAction ? "\n" : ""}`);
-    }
-    const changelog = await load(output);
-    const actualRepo = repo || config?.repo;
-    const result = await (0, action_1.exec)(version, dateOrNow(date), {
-        ...(config ?? {}),
-        repo: actualRepo === "false"
-            ? undefined
-            : actualRepo || process.env.GITHUB_REPOSITORY,
-    });
-    const newChangelog = (0, changelog_1.insertChangelog)(changelog && changelog.trim().length > 0
-        ? changelog
-        : config?.defaultChangelog ?? defaultChangelog, result.changelog, result.version, config?.versionTemplate);
-    if (githubAction) {
-        (0, core_1.setOutput)("changelog", result.changelogWithoutTitle);
-        (0, core_1.setOutput)("version", result.version);
-        (0, core_1.setOutput)("date", result.date);
-        (0, core_1.setOutput)("prevVersion", result.prevVersion);
-        (0, core_1.setOutput)("oldChangelog", changelog);
-        (0, core_1.setOutput)("newChangelog", newChangelog);
-    }
-    if (!noEmit && output !== "-") {
-        await fs_1.promises.writeFile(output, newChangelog);
-        console.error(`${githubAction ? "\n" : ""}Changelog was saved to ${output}`);
-        if (latest) {
-            await fs_1.promises.writeFile(latest, result.changelogWithoutTitle);
-            console.error(`Changelog only for the new version was saved to ${latest}`);
-        }
-    }
-    else if (!githubAction) {
-        console.log(newChangelog);
-    }
-})().catch((err) => {
-    if (githubAction) {
-        (0, core_1.setFailed)(err?.message || err);
-    }
-});
-function dateOrNow(date) {
-    if (!date)
-        return new Date();
-    let d = new Date(date);
-    if (isNaN(d.getTime())) {
-        d = new Date();
-    }
-    return d;
-}
-async function load(path) {
-    let data;
-    try {
-        data = await (path && path !== "-"
-            ? fs_1.promises.readFile(path, "utf8")
-            : readStdin());
-    }
-    catch (err) {
-        if (!err || typeof err !== "object" || err.code !== "ENOENT") {
-            throw err;
-        }
-    }
-    return data;
-}
-async function loadJSON(...paths) {
-    for (const path of paths) {
-        const data = await load(path);
-        if (data) {
-            const d = await yaml.load(data);
-            return [path, d];
-        }
-    }
-    return ["", undefined];
-}
-function argToBool(a, df) {
-    if (a === "true")
-        return true;
-    if (a === "false")
-        return false;
-    return df;
-}
-async function readStdin() {
-    const buffers = [];
-    for await (const chunk of process.stdin) {
-        buffers.push(chunk);
-    }
-    return Buffer.concat(buffers).toString();
-}
-
-
-/***/ }),
-
 /***/ 7351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -61970,6 +61299,678 @@ try {
 
 /***/ }),
 
+/***/ 7672:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.exec = void 0;
+const changelog_1 = __nccwpck_require__(8598);
+const core_1 = __nccwpck_require__(8188);
+const initialVersion = "v0.1.0";
+async function exec(version, date, options) {
+    const { all: tags, latest, latestDate } = await (0, core_1.getTags)();
+    const commits = await (0, core_1.getCommits)(latest, options?.includeOldCommits ? undefined : latestDate);
+    const nextVersion = latest
+        ? (0, core_1.bumpVersion)(latest, version || (0, core_1.getBumpFromCommits)(commits, options?.minorPrefixes))
+        : (0, core_1.isValidVersion)(version || "")
+            ? version
+            : !latest
+                ? options?.initialVersion || initialVersion
+                : undefined;
+    if (!nextVersion) {
+        throw new Error(`invalid version: ${version}`);
+    }
+    if (tags.includes(nextVersion)) {
+        throw new Error(`The next version already exists in tags: ${nextVersion}`);
+    }
+    const [changelog, changelogWithoutTitle, changelogDate] = (0, changelog_1.generateChangelog)(nextVersion, date, commits, options);
+    return {
+        changelog,
+        changelogWithoutTitle,
+        version: nextVersion,
+        prevVersion: latest,
+        date: changelogDate,
+    };
+}
+exports.exec = exec;
+
+
+/***/ }),
+
+/***/ 8598:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.mergeGroups = exports.detectMerge = exports.firstUppercase = exports.escapeRegex = exports.findVersionSection = exports.insertChangelog = exports.fixMarkdownLinkedCode = exports.hashLinks = exports.prLinks = exports.generateChangelogCommit = exports.generateChangelogPrefix = exports.generateChangelogScope = exports.generateChangelog = void 0;
+const date_fns_1 = __nccwpck_require__(3314);
+const lodash_1 = __nccwpck_require__(250);
+const mustache = __importStar(__nccwpck_require__(8272));
+const semver_1 = __nccwpck_require__(1383);
+const render = mustache.render ?? mustache.default.render;
+const defaultDateFormat = "yyyy-MM-dd";
+const defaultVersionTemplate = "## {{#unreleased}}Unreleased{{/unreleased}}{{^unreleased}}{{versionWithoutPrefix}} - {{date}}{{/unreleased}}";
+const defaultScopeTemplate = "### {{title}}";
+const defaultPrefixTemplate = "###{{#scope}}#{{/scope}} {{title}}";
+const defaultCommitTemplate = "- {{subject}}{{#shortHash}} `{{shortHash}}`{{/shortHash}}";
+const defaultOmittedCommitPattern = /^v\d+\.\d+\.\d+/;
+function generateChangelog(version, date, commits, options) {
+    const omittedCommitPatternRegex = options?.omittedCommitPattern
+        ? new RegExp(options.omittedCommitPattern)
+        : options?.omittedCommitPattern === ""
+            ? undefined
+            : defaultOmittedCommitPattern;
+    const commitScopes = mergeGroups((0, lodash_1.groupBy)(commits.filter((c) => !omittedCommitPatternRegex ||
+        !omittedCommitPatternRegex.test(c.subject)), (c) => c.scope ?? ""), detectMerge(options?.scopes ?? {}));
+    const scopes = Object.keys(commitScopes);
+    const knownScopes = Object.keys(options?.scopes ?? []);
+    const unknownScopes = scopes
+        .filter((g) => g && !knownScopes.includes(g))
+        .sort();
+    const scopeEnabled = options?.groupByScopes ??
+        (scopes.length > 1 || !!scopes[0] || !!knownScopes.length);
+    const formattedDate = (0, date_fns_1.format)(date, options?.dateFormat || defaultDateFormat);
+    const result = [
+        renderVersionHeader(options?.versionTemplate, version, formattedDate),
+        "",
+        ...[
+            ...Object.entries(options?.scopes ?? []),
+            ...unknownScopes.map((g) => [g, g]),
+            ["", ""],
+        ]
+            .filter(([key, g]) => g !== false && commitScopes[key]?.length)
+            .flatMap(([key, scope]) => {
+            const title = typeof scope === "string" ? scope : scope ? scope.title : undefined;
+            return [
+                generateChangelogScope({
+                    commits: commitScopes[key],
+                    scope: scopeEnabled,
+                    scopeName: key,
+                    scopeTitle: scopeEnabled ? title || key || "" : false,
+                    prefixes: options?.prefixes ?? {},
+                    repo: (typeof scope === "object" ? scope?.repo : null) ?? options?.repo,
+                    dedupSameMessages: options?.dedupSameMessages,
+                    capitalizeFirstLetter: options?.capitalizeFirstLetter,
+                    linkHashes: options?.linkHashes,
+                    linkPRs: options?.linkPRs,
+                    scopeTemplate: options?.scopeTemplate,
+                    prefixTemplate: options?.prefixTemplate,
+                    commitTemplate: options?.commitTemplate,
+                }),
+                "",
+            ];
+        })
+            .slice(0, -1),
+    ];
+    return [result.join("\n"), result.slice(2).join("\n"), formattedDate];
+}
+exports.generateChangelog = generateChangelog;
+function generateChangelogScope({ commits, scope, scopeName, scopeTitle, prefixes, repo, groupByPrefix = true, scopeTemplate = defaultScopeTemplate, ...options }) {
+    if (!commits.length)
+        return "";
+    const commitPrefixes = !groupByPrefix
+        ? {}
+        : mergeGroups((0, lodash_1.groupBy)(commits, (c) => c.prefix ?? ""), detectMerge(prefixes));
+    const knownPrefixes = Object.keys(prefixes);
+    const unknownPrefixes = Object.keys(commitPrefixes)
+        .filter((p) => !!p && !knownPrefixes.includes(p))
+        .sort()
+        .concat(commitPrefixes[""] ? [""] : []);
+    return [
+        ...(scopeTitle === false
+            ? []
+            : [
+                render(scopeTemplate, {
+                    scope,
+                    name: scopeName,
+                    title: scopeTitle,
+                    repo,
+                    commits,
+                }),
+                "",
+            ]),
+        ...(groupByPrefix
+            ? [...Object.entries(prefixes), ...unknownPrefixes.map((p) => [p, p])]
+            : [])
+            .filter(([key, prefix]) => prefix !== false &&
+            (typeof prefix !== "object" || prefix?.title !== false) &&
+            commitPrefixes[key]?.length)
+            .flatMap(([key, prefix]) => [
+            generateChangelogPrefix({
+                commits: commitPrefixes[key],
+                scope,
+                scopeName,
+                scopeTitle,
+                prefix: key,
+                title: (typeof prefix === "object" ? prefix.title : prefix) || key,
+                repo,
+                ...options,
+            }),
+            "",
+        ])
+            .slice(0, -1),
+        ...(!groupByPrefix
+            ? sortCommits(commits, options.dedupSameMessages).map((commit) => [
+                generateChangelogCommit({
+                    commit,
+                    repo,
+                    scope,
+                    scopeName,
+                    scopeTitle,
+                    template: options.commitTemplate,
+                    dateFormat: options.commitDateFormat,
+                    ...options,
+                }),
+            ])
+            : []),
+    ].join("\n");
+}
+exports.generateChangelogScope = generateChangelogScope;
+function generateChangelogPrefix({ commits, prefix, title, repo, scope, scopeName, scopeTitle, dedupSameMessages, prefixTemplate = defaultPrefixTemplate, commitTemplate, commitDateFormat, ...options }) {
+    if (!commits?.length)
+        return "";
+    const processdCommits = sortCommits(commits, dedupSameMessages);
+    return [
+        render(prefixTemplate, {
+            scope,
+            scopeName,
+            scopeTitle,
+            prefix,
+            title,
+            repo,
+            commits: processdCommits,
+        }),
+        "",
+        ...processdCommits
+            .map((commit) => generateChangelogCommit({
+            commit,
+            repo,
+            template: commitTemplate,
+            scope,
+            scopeName,
+            scopeTitle,
+            dateFormat: commitDateFormat,
+            ...options,
+        }))
+            .filter(Boolean),
+    ].join("\n");
+}
+exports.generateChangelogPrefix = generateChangelogPrefix;
+function sortCommits(commits, dedupSameMessages = true) {
+    return (dedupSameMessages ? (0, lodash_1.uniqBy)(commits, (c) => c.subject) : commits.concat()).sort((a, b) => b.date.getTime() - a.date.getTime());
+}
+function generateChangelogCommit({ commit, template = defaultCommitTemplate, repo, scope, scopeName, scopeTitle, dateFormat = defaultDateFormat, capitalizeFirstLetter = true, linkHashes = true, linkPRs = true, }) {
+    repo = getRepoUrl(repo);
+    const shortHash = commit.hash?.slice(0, 6);
+    let message = render(template, {
+        ...commit,
+        date: (0, date_fns_1.format)(commit.date, dateFormat),
+        subject: firstUppercase(commit.subject, capitalizeFirstLetter),
+        shortHash,
+        repo,
+        scope,
+        scopeName,
+        scopeTitle,
+    });
+    if (linkPRs) {
+        message = prLinks(message, repo);
+    }
+    if (linkHashes && repo && commit.hash) {
+        message = hashLinks(message, commit.hash, repo);
+    }
+    return fixMarkdownLinkedCode(message);
+}
+exports.generateChangelogCommit = generateChangelogCommit;
+function prLinks(md, repo) {
+    return repo
+        ? md.replace(/(^|[^[])#(\d+?)(\D|$)/g, `$1[#$2](${repo}/pull/$2)$3`)
+        : md;
+}
+exports.prLinks = prLinks;
+function hashLinks(md, hash, repo) {
+    hash = hash.replace(/[^0-9a-z]/g, "");
+    const shortHash = hash.slice(0, 6);
+    return repo
+        ? md.replace(new RegExp(`${hash}|${shortHash}`, "g"), `[$&](${repo}/commit/${shortHash})`)
+        : md;
+}
+exports.hashLinks = hashLinks;
+function fixMarkdownLinkedCode(md) {
+    return md.replace(/`\[(.+?)\]\((.+?)\)`/g, "[`$1`]($2)");
+}
+exports.fixMarkdownLinkedCode = fixMarkdownLinkedCode;
+function getRepoUrl(repo) {
+    return repo?.startsWith("http")
+        ? repo.replace(/\/$/, "")
+        : repo
+            ? `https://github.com/${repo}`
+            : "";
+}
+function insertChangelog(changelog, inserting, version, template) {
+    // remove unreleased section
+    if (version !== "unreleased") {
+        const u = findVersionSection(changelog, "unreleased", template);
+        if (u) {
+            changelog =
+                changelog.slice(0, u[0]) + (u[1] === null ? "" : changelog.slice(u[1]));
+        }
+    }
+    let m = findVersionSection(changelog, version, template);
+    if (!m) {
+        const n = version
+            ? findVersionSection(changelog, undefined, template)
+            : null;
+        if (!n)
+            return (changelog.trim() + "\n\n" + inserting).trim();
+        m = n;
+    }
+    const [start, end] = m;
+    return (changelog.slice(0, start) +
+        inserting.trim() +
+        "\n\n" +
+        (end ? changelog.slice(end) : "")).trim();
+}
+exports.insertChangelog = insertChangelog;
+function renderVersionHeader(template, version, formattedDate) {
+    return render(template || defaultVersionTemplate, {
+        version,
+        versionWithPrefix: `v${version.replace(/^v/, "")}`,
+        versionWithoutPrefix: version.replace(/^v/, ""),
+        unreleased: version === "unreleased",
+        prerelease: !!(0, semver_1.prerelease)(version),
+        date: formattedDate,
+    });
+}
+function findVersionSection(changelog, version, template) {
+    const trimmedVersion = version?.replace(/^v(\d)/, "$1");
+    const tmpl = renderVersionHeader(template, "{{___VERSION___}}", "{{___CHANGELOG_DATE___}}");
+    if (!tmpl.includes("{{___VERSION___}}"))
+        return null;
+    const re = new RegExp(escapeRegex(tmpl)
+        .replace("\\{\\{___VERSION___\\}\\}", "(.+)")
+        .replace("\\{\\{___CHANGELOG_DATE___\\}\\}", ".+"), "gm");
+    let i = null, j = null;
+    if (version === "unreleased") {
+        const reUnreleased = new RegExp(escapeRegex(renderVersionHeader(template, "unreleased", "{{___CHANGELOG_DATE___}}")).replace("\\{\\{___CHANGELOG_DATE___\\}\\}", ".+"), "m");
+        const m = reUnreleased.exec(changelog);
+        if (!m)
+            return null;
+        i = m.index;
+    }
+    for (let m; (m = re.exec(changelog));) {
+        if (!version ||
+            (i !== null && m.index !== i) ||
+            (version !== "unreleased" &&
+                trimmedVersion &&
+                m[1].replace(/^v(\d)/, "$1") === trimmedVersion)) {
+            if (i !== null) {
+                j = m.index;
+                break;
+            }
+            else {
+                i = m.index;
+                if (!version)
+                    break;
+            }
+        }
+    }
+    return i !== null ? [i, version ? j : i] : null;
+}
+exports.findVersionSection = findVersionSection;
+function escapeRegex(s) {
+    return s.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");
+}
+exports.escapeRegex = escapeRegex;
+function firstUppercase(subject, enabled) {
+    return enabled ? subject.charAt(0).toUpperCase() + subject.slice(1) : subject;
+}
+exports.firstUppercase = firstUppercase;
+function detectMerge(o) {
+    const m = new Map(Object.entries(o)
+        .map(([k, v]) => {
+        const t = getTitle(v);
+        return t ? [t, k] : null;
+    })
+        .filter((e) => !!e)
+        .reverse());
+    return Object.entries(o).reduce((a, [k, v]) => {
+        const t = getTitle(v);
+        if (!t)
+            return a;
+        const l = m.get(t);
+        if (!l || l === k)
+            return a;
+        return {
+            ...a,
+            [k]: l,
+        };
+    }, {});
+    function getTitle(e) {
+        return typeof e === "string"
+            ? e
+            : typeof e === "object" &&
+                e &&
+                "title" in e &&
+                typeof e.title === "string"
+                ? e.title
+                : "";
+    }
+}
+exports.detectMerge = detectMerge;
+function mergeGroups(o, m) {
+    return Object.entries(o).reduce((a, [k, v]) => m[k]
+        ? {
+            ...a,
+            [m[k]]: [...(a[m[k]] ?? []), ...v],
+        }
+        : { ...a, [k]: v }, {});
+}
+exports.mergeGroups = mergeGroups;
+
+
+/***/ }),
+
+/***/ 8188:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.bumpVersion = exports.getBumpFromCommits = exports.isValidVersion = exports.parseCommitMessage = exports.getCommits = exports.getTags = void 0;
+const semver_1 = __nccwpck_require__(1383);
+const simple_git_1 = __importDefault(__nccwpck_require__(9103));
+const git = (0, simple_git_1.default)();
+async function getTags() {
+    const tags = await git.tags();
+    const log = tags.latest
+        ? await git.log({
+            from: tags.latest + "~",
+            to: tags.latest,
+        })
+        : undefined;
+    return {
+        ...tags,
+        latestDate: log?.latest ? new Date(log.latest.date) : undefined,
+    };
+}
+exports.getTags = getTags;
+async function getCommits(from, since) {
+    if (!from) {
+        from = (await git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim();
+        if (!from) {
+            throw new Error("there are no commits in this repo");
+        }
+    }
+    return (await git.log({
+        from,
+        to: "HEAD",
+    })).all
+        .filter((l) => !l.message.startsWith("Revert ") &&
+        !l.message.startsWith("Merge branch ") &&
+        !l.message.startsWith("Merge commit ") &&
+        !l.message.match(/^v\d+\./) &&
+        (!since || new Date(l.date) > since))
+        .map((l) => ({
+        body: l.body,
+        hash: l.hash,
+        date: new Date(l.date),
+        ...parseCommitMessage(l.message),
+    }));
+}
+exports.getCommits = getCommits;
+const commitMessageReg = /^([a-z]+?)(?:\((.+?)\))?(!)?:(.*)$/;
+const prReg = /#(\d+)(?:\D|$)/;
+function parseCommitMessage(subject) {
+    const m = subject.match(commitMessageReg);
+    const s = m?.[4].trim() || subject;
+    return {
+        prefix: m?.[1],
+        scope: m?.[2],
+        breakingChange: !!m?.[3] || s.includes("BREAKING CHANGE"),
+        subject: s,
+        pr: s.match(prReg)?.[1],
+    };
+}
+exports.parseCommitMessage = parseCommitMessage;
+function isValidVersion(version) {
+    return version === "unreleased" || !!(0, semver_1.valid)(version);
+}
+exports.isValidVersion = isValidVersion;
+const defaultMinorPrefixes = ["feat"];
+function getBumpFromCommits(commits, minorPrefixes = defaultMinorPrefixes) {
+    for (const commit of commits) {
+        if (commit.breakingChange)
+            return "major";
+        if (commit.prefix && minorPrefixes.includes(commit.prefix))
+            return "minor";
+    }
+    return "patch";
+}
+exports.getBumpFromCommits = getBumpFromCommits;
+function bumpVersion(version, next) {
+    if (next === "major" ||
+        next === "premajor" ||
+        next === "minor" ||
+        next === "preminor" ||
+        next === "patch" ||
+        next === "prepatch" ||
+        next === "prerelease") {
+        const res = (0, semver_1.inc)(version, next);
+        if (!res?.startsWith("v") && version.startsWith("v")) {
+            return `v${res}`;
+        }
+        return res;
+    }
+    if (!next.startsWith("v") && version.startsWith("v")) {
+        return `v${next}`;
+    }
+    return next;
+}
+exports.bumpVersion = bumpVersion;
+
+
+/***/ }),
+
+/***/ 399:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const fs_1 = __nccwpck_require__(7147);
+const core_1 = __nccwpck_require__(2186);
+const command_line_args_1 = __importDefault(__nccwpck_require__(5984));
+const command_line_usage_1 = __importDefault(__nccwpck_require__(7950));
+const yaml = __importStar(__nccwpck_require__(1917));
+const action_1 = __nccwpck_require__(7672);
+const changelog_1 = __nccwpck_require__(8598);
+const githubAction = !!process.env.GITHUB_ACTIONS;
+const defaultChangelog = "# Changelog\n\nAll notable changes to this project will be documented in this file.";
+const options = {
+    version: (0, core_1.getInput)("version") || process.env.CHANGELOG_VERSION,
+    date: (0, core_1.getInput)("date") || process.env.CHANGELOG_DATE,
+    repo: (0, core_1.getInput)("repo") || process.env.CHANGELOG_REPO,
+    latest: (0, core_1.getInput)("latest") || process.env.CHANGELOG_LATEST,
+    output: (0, core_1.getInput)("output") || process.env.CHANGELOG_OUTPUT,
+    configPath: (0, core_1.getInput)("config") || process.env.CHANGELOG_CONFIG,
+    noEmit: argToBool((0, core_1.getInput)("noEmit") || process.env.CHANGELOG_NO_EMIT, false),
+};
+const argOptions = [
+    { name: "version", type: String, alias: "v" },
+    { name: "date", type: String, alias: "d" },
+    { name: "repo", type: String, alias: "r" },
+    { name: "latest", type: String, alias: "l" },
+    { name: "output", type: String, alias: "o" },
+    { name: "configPath", type: String, alias: "c" },
+    { name: "noEmit", type: Boolean, alias: "n" },
+    { name: "help", type: Boolean, alias: "h" },
+];
+const args = githubAction ? {} : (0, command_line_args_1.default)(argOptions);
+if (!githubAction && args.help) {
+    console.log((0, command_line_usage_1.default)([
+        {
+            header: "changelog",
+            content: "Generate CHANGELOG.md from git commit logs",
+        },
+        {
+            header: "Options",
+            optionList: argOptions,
+        },
+    ]));
+    // eslint-disable-next-line no-process-exit
+    process.exit(0);
+}
+(async function () {
+    const { version, date, repo, latest, output = "CHANGELOG.md", configPath = [
+        ".github/changelog.yml",
+        ".github/changelog.json",
+        ".github/changelog.yaml",
+    ], noEmit, } = { ...options, ...args };
+    const [loadedConfigPath, config] = await loadJSON(...(Array.isArray(configPath) ? configPath : [configPath]));
+    if (config) {
+        console.error(`Config loaded from ${loadedConfigPath}: ${JSON.stringify(config)}${githubAction ? "\n" : ""}`);
+    }
+    const changelog = await load(output);
+    const actualRepo = repo || config?.repo;
+    const result = await (0, action_1.exec)(version, dateOrNow(date), {
+        ...(config ?? {}),
+        repo: actualRepo === "false"
+            ? undefined
+            : actualRepo || process.env.GITHUB_REPOSITORY,
+    });
+    const newChangelog = (0, changelog_1.insertChangelog)(changelog && changelog.trim().length > 0
+        ? changelog
+        : config?.defaultChangelog ?? defaultChangelog, result.changelog, result.version, config?.versionTemplate);
+    if (githubAction) {
+        (0, core_1.setOutput)("changelog", result.changelogWithoutTitle);
+        (0, core_1.setOutput)("version", result.version);
+        (0, core_1.setOutput)("date", result.date);
+        (0, core_1.setOutput)("prevVersion", result.prevVersion);
+        (0, core_1.setOutput)("oldChangelog", changelog);
+        (0, core_1.setOutput)("newChangelog", newChangelog);
+    }
+    if (!noEmit && output !== "-") {
+        await fs_1.promises.writeFile(output, newChangelog);
+        console.error(`${githubAction ? "\n" : ""}Changelog was saved to ${output}`);
+        if (latest) {
+            await fs_1.promises.writeFile(latest, result.changelogWithoutTitle);
+            console.error(`Changelog only for the new version was saved to ${latest}`);
+        }
+    }
+    else if (!githubAction) {
+        console.log(newChangelog);
+    }
+})().catch((err) => {
+    if (githubAction) {
+        (0, core_1.setFailed)(err?.message || err);
+    }
+});
+function dateOrNow(date) {
+    if (!date)
+        return new Date();
+    let d = new Date(date);
+    if (isNaN(d.getTime())) {
+        d = new Date();
+    }
+    return d;
+}
+async function load(path) {
+    let data;
+    try {
+        data = await (path && path !== "-"
+            ? fs_1.promises.readFile(path, "utf8")
+            : readStdin());
+    }
+    catch (err) {
+        if (!err || typeof err !== "object" || err.code !== "ENOENT") {
+            throw err;
+        }
+    }
+    return data;
+}
+async function loadJSON(...paths) {
+    for (const path of paths) {
+        const data = await load(path);
+        if (data) {
+            const d = await yaml.load(data);
+            return [path, d];
+        }
+    }
+    return ["", undefined];
+}
+function argToBool(a, df) {
+    if (a === "true")
+        return true;
+    if (a === "false")
+        return false;
+    return df;
+}
+async function readStdin() {
+    const buffers = [];
+    for await (const chunk of process.stdin) {
+        buffers.push(chunk);
+    }
+    return Buffer.concat(buffers).toString();
+}
+
+
+/***/ }),
+
 /***/ 9491:
 /***/ ((module) => {
 
@@ -62120,7 +62121,7 @@ module.exports = require("util");
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(9496);
+/******/ 	var __webpack_exports__ = __nccwpck_require__(399);
 /******/ 	module.exports = __webpack_exports__;
 /******/ 	
 /******/ })()
