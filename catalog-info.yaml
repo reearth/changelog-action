@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: changelog-action
+  namespace: reearth
+  description: GitHub action to generate CHANGELOG
+  annotations:
+    github.com/project-slug: reearth/changelog-action
+  links:
+  - url: https://github.com/reearth/changelog-action
+    title: GitHub
+    icon: github
+  tags:
+  - typescript
+spec:
+  type: service
+  lifecycle: production
+  owner: eukarya-inc/sre
